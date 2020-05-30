@@ -1,0 +1,3 @@
+WeightedMovesAI
+
+AI based on weight of all available moves
