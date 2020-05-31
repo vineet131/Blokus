@@ -99,10 +99,12 @@ class Board:
             bl = False
         return tl, tr, bl, br
     
-    #Piece is the array of the piece being placed
-    #Board is the array of the current state of the board
-    #player is the player making the move
-    #coords are the coordinates of the top left corner of the array of the move being made
+    """Piece is the array of the piece being placed
+    Board is the array of the current state of the board
+    player is the player making the move
+    coords are the coordinates of the top left corner of the array of the move being made
+    
+    Check if, for a given piece and board coords, if the move is valid"""
     def check_is_move_valid(self, piece, player, coords):
         is_allowed = False
         is_corner_exists = False
@@ -126,6 +128,9 @@ class Board:
                             is_corner_exists = True
                 elif piece[i][j] == 1 and board[x][y] != empty:
                     return False
+                y += 1
+            x += 1
+            y = coords[1]
         if is_corner_exists:
             is_allowed = True
         return is_allowed
@@ -133,8 +138,8 @@ class Board:
     #Copy the board state and the player state. Useful for AIs like Minimax
     def retain_board(self, ai_player, opponent_player):
         self.board_copy = self.board
-        self.player1_corners_copy = self.player1_corners
-        self.player2_corners_copy = self.player2_corners
+        ai_player.board_corners_copy = ai_player.board_corners
+        opponent_player.board_corners_copy = opponent_player.board_corners
         ai_player.remaining_pieces_copy = ai_player.remaining_pieces
         opponent_player.remaining_pieces_copy = opponent_player.remaining_pieces
         ai_player.discarded_pieces_copy = ai_player.discarded_pieces
@@ -143,8 +148,8 @@ class Board:
    #Restore the board and player state properties. Useful for AIs like Minimax 
     def restore_board(self, ai_player, opponent_player):
         self.board = self.board_copy
-        self.player1_corners = self.player1_corners_copy
-        self.player2_corners = self.player2_corners_copy
+        ai_player.board_corners = ai_player.board_corners_copy
+        opponent_player.board_corners = opponent_player.board_corners_copy
         ai_player.remaining_pieces = ai_player.remaining_pieces_copy
         opponent_player.remaining_pieces = opponent_player.remaining_pieces_copy
         ai_player.discarded_pieces = ai_player.discarded_pieces_copy
@@ -174,7 +179,7 @@ def get_corners_of_piece(piece, i, j):
 #For AIs, we get a list of all the possible remaining moves. To do this,
 #we get all possible poiece configurations and match them to all the corners
 #available on the board
-def return_all_pending_moves(board, player):
+def return_all_pending_moves(player, mode = "is_game_over"):
     pending_moves_list = []
 
     #Take the dictionary of remaining pieces
@@ -205,6 +210,10 @@ def return_all_pending_moves(board, player):
                         if br and len(player.board_corners["tl"]) > 0:
                             pending_moves_list.append({"piece": piece, "flipped": flip,
                                 "rotated": rot, "join_at": [i,j], "board_corner": "tl"})
+                    #If we just want to check if the game is over or not, we dont need to
+                    #iterate every possibility
+                    if mode == "is_game_over" and len(pending_moves_list) > 0:
+                        return pending_moves_list
     return pending_moves_list
 
 def is_game_over(board, player1, player2):
@@ -215,8 +224,8 @@ def is_game_over(board, player1, player2):
     if not player1.remaining_pieces and not player2.remaining_pieces:
         return True
     #If there are no more possible moves for both players, game over
-    if len(return_all_pending_moves(board, player1)) == 0 and \
-       len(return_all_pending_moves(board, player2)) == 0:
+    if len(return_all_pending_moves(player1, "is_game_over")) == 0 and \
+       len(return_all_pending_moves(player2, "is_game_over")) == 0:
         return True
     return False
 
