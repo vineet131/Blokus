@@ -8,7 +8,7 @@ class Player:
         self.number = player_number
         self.remaining_pieces = pieces.get_pieces()
         self.discarded_pieces = {}
-        self.current_piece = {"piece": "", "arr": [], "rotated": 0, "flipped": 0}
+        self.current_piece = {"piece": "", "arr": [], "rotated": 0, "flipped": 0, "place_on_board_at": []}
         self.color = color
         self.score = board.scoring_fn(remaining_pieces)
         

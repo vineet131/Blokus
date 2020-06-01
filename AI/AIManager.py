@@ -5,6 +5,9 @@ import MinimaxAI
 
 def main(gameboard, ai_player, opponent_player):
     if ai_player.name == "MinimaxAI":
-        MinimaxAI.main(gameboard, ai_player, opponent_player)
+        best_move = MinimaxAI.main(gameboard, ai_player, opponent_player)
     #Add your AI here with elif conditions. It should end the turn
-    #by setting player.current_piece with the piece to be placed
+    #by returning a dict containg the best move in the same format as
+    #the return value in return_all_pending_moves
+
+    gameboard.fit_piece(best_move, best_move["place_on_board_at"], ai_player, opponent_player)
