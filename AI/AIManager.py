@@ -3,5 +3,8 @@
 #that we are using in the game
 import MinimaxAI
 
-def main(gameboard, available_moves):
-    return gameboard
+def main(gameboard, ai_player, opponent_player):
+    if ai_player.name == "MinimaxAI":
+        MinimaxAI.main(gameboard, ai_player, opponent_player)
+    #Add your AI here with elif conditions. It should end the turn
+    #by setting player.current_piece with the piece to be placed

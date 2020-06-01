@@ -13,8 +13,8 @@ class Player:
         self.score = board.scoring_fn(remaining_pieces)
         
         #tl = top left, bl = bottom left, tr = top right, br = bottom right
-        self.board_corners = {"bl":[],"br":[],"tl":[],"tr":[]}
-        self.board_corners_copy = {"bl":[],"br":[],"tl":[],"tr":[]}
+        self.board_corners = {"bl":[], "br":[], "tl":[], "tr":[]}
+        self.board_corners_copy = {"bl":[], "br":[], "tl":[], "tr":[]}
         self.is_1st_move = True
         #Useful for AIs
         self.is_ai = is_ai
@@ -25,5 +25,43 @@ class Player:
     def update_score(self):
         self.score = board.scoring_fn(remaining_pieces)
     
+    def set_current_piece(self, piece_name):
+        self.current_piece = {"piece": piece_name, "arr": pieces.get_pieces()[piece_name], \
+                              "rotated": 0, "flipped": 0}
+    
     def empty_current_piece(self):
         self.current_piece = {"piece": "", "arr": [], "rotated": 0, "flipped": 0}
+    
+    #We only rotate whatever is the current piece. We keep track of which rotated state its in
+    def rotate_current_piece(self, clockwise = True):
+        max_rots = get_pieces()[self.current_piece["piece"]]["rots"]
+        current_state = self.current_piece["rotated"]
+    
+        if clockwise:
+            if current_state = max_rots - 1:
+                current_state = 0
+            else:
+                current_state += 1
+            self.current_piece["rotated"] = current_state
+            return np.rot90(self.current_piece["arr"], k = 1)
+        else:
+            if current_state = 0:
+                current_state = max_rots - 1
+            else:
+                current_state -= 1
+            self.current_piece["rotated"] = current_state
+            return np.rot90(self.current_piece["arr"], k = -1)
+
+    #We only flip whatever is the current piece. We keep track of which flipped state its in
+    def flip_current_piece(self):
+        if get_pieces()[self.current_piece["piece"]]["flips"] == 1:
+            return self.current_piece["arr"]
+        else:
+            if self.current_piece["flipped"] == 1:
+                self.current_piece["flipped"] = 0
+            else:
+                self.current_piece["flipped"] += 1
+            return np.flipud(self.current_piece["arr"])
+
+def switch_active_player(active_player, opponent):
+    return opponent, active_player

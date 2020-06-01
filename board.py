@@ -193,7 +193,7 @@ def return_all_pending_moves(player, mode = "is_game_over"):
                 current_piece = np.flipud(current_piece)
             #Iterate over number of possible rotations for each piece
             for rot in range(pieces[piece]["rots"] - 1):
-                current_piece = np.rot90(current_piece, k = rot)
+                current_piece = np.rot90(current_piece, k = 1)
                 #Get the corners of current piece configuration
                 for i in range(current_piece.shape[0]):
                     for j in range(current_piece.shape[1]):

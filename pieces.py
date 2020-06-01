@@ -49,15 +49,7 @@ def get_pieces():
     }
     return dict_pieces
 
-def rotate_piece(piece, k):
-    #Rotates the piece. k=-1 rotates in clockwise direction
-    return np.rot90(piece, k)
-    
-def flip_piece(piece):
-    #Flip the piece inside-out
-    return np.flipud(piece)
-    
-def discard_piece(piece, player):
+def discard_piece(piece_name, player):
     #Append to dictionary containing discarded pieces
-    del player.remaining_pieces[piece.key()]
-    player.discarded_pieces[piece.key()] = piece.value()
+    del player.remaining_pieces[piece_name]
+    player.discarded_pieces[get_pieces()[piece_name]] = get_pieces()[piece_name]["arr"]
