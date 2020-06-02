@@ -34,7 +34,7 @@ def get_pieces():
         "piece7": {"arr":np.array([[1,0],[1,1],[1,0]]),"rots":4,"flips":1},
         "piece8": {"arr":np.array([[1,1],[1,1]]),"rots":1,"flips":1},
         "piece9": {"arr":np.array([[1,1,0],[0,1,1]]),"rots":2,"flips":2},
-        "piece10": {"arr":np.array([[1],[1],[1],[1],[1]),"rots":2,"flips":1},
+        "piece10": {"arr":np.array([[1],[1],[1],[1],[1]]),"rots":2,"flips":1},
         "piece11": {"arr":np.array([[0,1],[0,1],[0,1],[1,1]]),"rots":4,"flips":2},
         "piece12": {"arr":np.array([[0,1],[0,1],[1,1],[1,0]]),"rots":4,"flips":2},
         "piece13": {"arr":np.array([[0,1],[1,1],[1,1]]),"rots":4,"flips":2},

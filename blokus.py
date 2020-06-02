@@ -8,11 +8,6 @@ def pygame_init():
     pygame.display.set_caption("Blokus on Pygame")
     return window
 
-screen = pygame_init()
-
-# Used to manage how fast the screen updates
-clock = pygame.time.Clock()
-
 def key_controls(keys):
     if keys[pygame.K_LEFT]:
         #Move left
@@ -45,14 +40,12 @@ def game_intro():
     while intro:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                is_quit = True
-        if is_quit:
+                IS_QUIT = True
+        if IS_QUIT:
             break
         large_text = pygame.font.Font('freesansbold.ttf', 115)
         #We also need a window where we can choose starting options
         #That window is where we will initialise the player objects
-
-is_quit = False
 
 def init(player1_is_ai,
          player2_is_ai,
@@ -60,7 +53,7 @@ def init(player1_is_ai,
          player2_color,
          player1_name_if_ai,
          player2_name_if_ai):
-    gameboard = Board().board
+    gameboard = Board()
     player1 = player.Player(constants.PLAYER1_VALUE, player1_color, player1_is_ai, player1_name_if_ai)
     player2 = player.Player(constants.PLAYER2_VALUE, player2_color, player2_is_ai, player2_name_if_ai)
     return gameboard, player1, player2
@@ -70,6 +63,7 @@ def game_loop():
 
     gameboard, player1, player2 = init(False, True, constants.PURPLE, constants.ORANGE, None, "MinimaxAI")
     active_player, opponent = player1, player2
+    print(active_player.current_piece)
 
     while not game_over:
         if active_player.is_ai:
@@ -79,25 +73,22 @@ def game_loop():
             # Check for player input
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    is_quit = True
+                    game_over = True
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     # User clicks the mouse. Get the position
                     pos = pygame.mouse.get_pos()
                     #column = pos[0] // (WIDTH + MARGIN)
                     #row = pos[1] // (HEIGHT + MARGIN)
                     #gameboard[row][column] = 1
-                    if active_player.fit_piece(active_player.current_piece):
+                    if gameboard.fit_piece(active_player.current_piece, active_player, opponent):
                         active_player, opponent = player.switch_active_player(active_player, opponent)
             keys = pygame.key.get_pressed()
             key_controls(keys)
-            
-        if is_quit:
-            break
 
         # Set the screen background
         screen.fill(constants.BLACK)
 
-        draw_elements.draw_gameboard(gameboard, screen)
+        draw_elements.draw_gameboard(gameboard.board, screen)
 
         # Limit to 60 frames per second
         clock.tick(60)
@@ -105,6 +96,11 @@ def game_loop():
         # Update the screen with what is drawn.
         pygame.display.update()
 
+screen = pygame_init()
+# Used to manage how fast the screen updates
+clock = pygame.time.Clock()
+
 game_loop()
-if is_quit:
+
+if IS_QUIT:
     pygame.quit()

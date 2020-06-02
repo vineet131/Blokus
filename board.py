@@ -3,6 +3,7 @@ import numpy as np, constants, pieces
 empty = constants.BOARD_FILL_VALUE
 rows = constants.ROW_COUNT
 cols = constants.COLUMN_COUNT
+
 class Board:
 
     def __init__(self):
@@ -182,7 +183,7 @@ def get_corners_of_piece(piece_arr, i, j):
 #For AIs, we get a list of all the possible remaining moves. To do this,
 #we get all possible poiece configurations and match them to all the corners
 #available on the board
-def return_all_pending_moves(player, mode = "is_game_over"):
+def return_all_pending_moves(player, mode = "ai"):
     pending_moves_list = []
 
     #Take the dictionary of remaining pieces
@@ -250,7 +251,7 @@ def scoring_fn(remaining_pieces):
                     if piece[i][j] == 1: #1 means 1 unit sq of that piece
                         score = score - 1
     # If the last pc played is the 1 unit sq pc, we get extra 5 pts
-    if len(remaining_pieces) == 1 and "piece1" in remaining_pieces
+    if len(remaining_pieces) == 1 and "piece1" in remaining_pieces \
        and score == 88:
         score = score + 5
     return score

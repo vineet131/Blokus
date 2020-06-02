@@ -4,6 +4,7 @@
 import MinimaxAI
 
 def main(gameboard, ai_player, opponent_player):
+    best_move = None
     if ai_player.name == "MinimaxAI":
         best_move = MinimaxAI.main(gameboard, ai_player, opponent_player)
     #Add your AI here with elif conditions. It should end the turn
@@ -11,6 +12,6 @@ def main(gameboard, ai_player, opponent_player):
     #the return value in return_all_pending_moves
 
     if not gameboard.fit_piece(best_move, ai_player, opponent_player):
-        raise Exception("Piece was not fit")
+        raise Exception("AI piece was not fit")
     if ai_player.is_1st_move:
         ai_player.is_1st_move = False

@@ -10,7 +10,7 @@ class Player:
         self.discarded_pieces = {}
         self.current_piece = {"piece": "", "arr": [], "rotated": 0, "flipped": 0, "place_on_board_at": []}
         self.color = color
-        self.score = board.scoring_fn(remaining_pieces)
+        self.score = board.scoring_fn(self.remaining_pieces)
         
         #tl = top left, bl = bottom left, tr = top right, br = bottom right
         self.board_corners = {"bl":[], "br":[], "tl":[], "tr":[]}
@@ -23,7 +23,7 @@ class Player:
         self.discarded_pieces_copy = {}
 
     def update_score(self):
-        self.score = board.scoring_fn(remaining_pieces)
+        self.score = board.scoring_fn(self.remaining_pieces)
     
     def set_current_piece(self, piece_name):
         self.current_piece = {"piece": piece_name, "arr": pieces.get_pieces()[piece_name]}
@@ -37,14 +37,14 @@ class Player:
         current_state = self.current_piece["rotated"]
     
         if clockwise:
-            if current_state = max_rots - 1:
+            if current_state == max_rots - 1:
                 current_state = 0
             else:
                 current_state += 1
             self.current_piece["rotated"] = current_state
             return np.rot90(self.current_piece["arr"], k = 1)
         else:
-            if current_state = 0:
+            if current_state == 0:
                 current_state = max_rots - 1
             else:
                 current_state -= 1
