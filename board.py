@@ -14,7 +14,7 @@ class Board:
     
     #Fit a given piece at a given position on the board
     #For human player: We pass the player.current_piece as the piece parameter
-    #For AI: We pass one move from the dict retuened by return_all_pending_moves
+    #For AI: We pass one move from the dict returned by return_all_pending_moves
     #        or a dict in a similar format as the piece parameter
     def fit_piece(self, piece, player, opponent_player):
         x, y = piece["place_on_board_at"][0], piece["place_on_board_at"][1]

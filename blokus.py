@@ -63,9 +63,12 @@ def game_loop():
 
     gameboard, player1, player2 = init(False, True, constants.PURPLE, constants.ORANGE, None, "MinimaxAI")
     active_player, opponent = player1, player2
-    print(active_player.current_piece)
 
     while not game_over:
+        is_piece_selected = False
+        #Two kinds of players, human and AI. We use that as our basis for checking and making turn based moves.
+        #When AI player's turn, let the AIManager handle the move making
+        #When human player's turn, listen for input
         if active_player.is_ai:
             AIManager.main(gameboard, active_player, opponent)
             active_player, opponent = player.switch_active_player(active_player, opponent)
@@ -74,14 +77,22 @@ def game_loop():
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     game_over = True
+                    IS_QUIT = True
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     # User clicks the mouse. Get the position
                     pos = pygame.mouse.get_pos()
-                    #column = pos[0] // (WIDTH + MARGIN)
-                    #row = pos[1] // (HEIGHT + MARGIN)
-                    #gameboard[row][column] = 1
-                    if gameboard.fit_piece(active_player.current_piece, active_player, opponent):
-                        active_player, opponent = player.switch_active_player(active_player, opponent)
+                    if constants.VERBOSITY > 0:
+                        print(pos)
+                    
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    if is_piece_selected:
+                        if gameboard.fit_piece(active_player.current_piece, active_player, opponent):
+                            active_player, opponent = player.switch_active_player(active_player, opponent)
+                elif event.type == pygame.MOUSEMOTION:
+                    if is_piece_selected:
+                        mouse_x, mouse_y = event.pos
+                        #rectangle.x = mouse_x + offset_x
+                        #rectangle.y = mouse_y + offset_y
             keys = pygame.key.get_pressed()
             key_controls(keys)
 
@@ -89,6 +100,7 @@ def game_loop():
         screen.fill(constants.BLACK)
 
         draw_elements.draw_gameboard(gameboard.board, screen)
+        draw_elements.draw_pieces(screen, active_player, opponent)
 
         # Limit to 60 frames per second
         clock.tick(60)
@@ -99,6 +111,7 @@ def game_loop():
 screen = pygame_init()
 # Used to manage how fast the screen updates
 clock = pygame.time.Clock()
+IS_QUIT = False
 
 game_loop()
 
