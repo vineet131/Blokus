@@ -10,4 +10,5 @@ def main(gameboard, ai_player, opponent_player):
     #by returning a dict containg the best move in the same format as
     #the return value in return_all_pending_moves
 
-    gameboard.fit_piece(best_move, best_move["place_on_board_at"], ai_player, opponent_player)
+    if not gameboard.fit_piece(best_move, ai_player, opponent_player):
+        raise Exception("Piece was not fit")

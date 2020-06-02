@@ -15,8 +15,8 @@ class Board:
     #For human player: We pass the player.current_piece as the piece parameter
     #For AI: We pass one move from the dict retuened by return_all_pending_moves
     #        or a dict in a similar format as the piece parameter
-    def fit_piece(self, piece, coords, player, opponent_player):
-        x, y = coords[0], coords[1]
+    def fit_piece(self, piece, player, opponent_player):
+        x, y = piece["place_on_board_at"][0], piece["place_on_board_at"][1]
         
         if player.is_1st_move:
             if player.number == constants.PLAYER1_VALUE:
@@ -33,19 +33,19 @@ class Board:
                         is_within_starting_pos = True
                     y += 1
                 x += 1
-                y = coords[1]
+                y = piece["place_on_board_at"][1]
             if not is_within_starting_pos:
                 return False
             player.is_1st_move = False
         else:
-            if check_is_move_valid(piece["arr"], coords):
+            if check_is_move_valid(piece["arr"], piece["place_on_board_at"]):
                 for i in range(piece["arr"].shape[0]):
                     for j in range(piece["arr"].shape[1]):
                         if piece["arr"][i][j] == 1:
                             self.board[x][y] = player.number * piece["arr"][i][j]
                         y += 1
                     x += 1
-                    y = coords[1]
+                    y = piece["place_on_board_at"][1]
             else:
                 return False
         
