@@ -12,3 +12,5 @@ def main(gameboard, ai_player, opponent_player):
 
     if not gameboard.fit_piece(best_move, ai_player, opponent_player):
         raise Exception("Piece was not fit")
+    if ai_player.is_1st_move:
+        ai_player.is_1st_move = False

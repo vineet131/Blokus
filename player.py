@@ -26,11 +26,10 @@ class Player:
         self.score = board.scoring_fn(remaining_pieces)
     
     def set_current_piece(self, piece_name):
-        self.current_piece = {"piece": piece_name, "arr": pieces.get_pieces()[piece_name], \
-                              "rotated": 0, "flipped": 0}
+        self.current_piece = {"piece": piece_name, "arr": pieces.get_pieces()[piece_name]}
     
     def empty_current_piece(self):
-        self.current_piece = {"piece": "", "arr": [], "rotated": 0, "flipped": 0}
+        self.current_piece = {"piece": "", "arr": [], "rotated": 0, "flipped": 0, "place_on_board_at": []}
     
     #We only rotate whatever is the current piece. We keep track of which rotated state its in
     def rotate_current_piece(self, clockwise = True):
