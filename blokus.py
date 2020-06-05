@@ -5,8 +5,13 @@ from board import Board
 def pygame_init():
     pygame.init()
     window = pygame.display.set_mode(constants.WINDOW_SIZE)
+    background = pygame.Surface(constants.WINDOW_SIZE)
     pygame.display.set_caption("Blokus on Pygame")
-    return window
+    pygame.font.init()
+    """font = pygame.font.SysFont("", 15)
+    label = font.render("Blokus", 1, constants.BLACK)
+    surface.blit(label, dims)"""
+    return window, background
 
 def key_controls(keys):
     if keys[pygame.K_LEFT]:
@@ -95,12 +100,14 @@ def game_loop():
                         #rectangle.y = mouse_y + offset_y
             keys = pygame.key.get_pressed()
             key_controls(keys)
-
+        
         # Set the screen background
         screen.fill(constants.BLACK)
-
-        draw_elements.draw_gameboard(gameboard.board, screen)
-        draw_elements.draw_pieces(screen, active_player, opponent)
+        
+        draw_elements.draw_gameboard(gameboard.board, background)
+        draw_elements.draw_pieces(background, active_player, opponent)
+        draw_elements.draw_infobox(background, active_player, opponent)
+        screen.blit(background, (0,0))
 
         # Limit to 60 frames per second
         clock.tick(60)
@@ -108,7 +115,7 @@ def game_loop():
         # Update the screen with what is drawn.
         pygame.display.update()
 
-screen = pygame_init()
+screen, background = pygame_init()
 # Used to manage how fast the screen updates
 clock = pygame.time.Clock()
 IS_QUIT = False
