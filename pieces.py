@@ -50,6 +50,7 @@ def get_pieces():
     return dict_pieces
 
 def discard_piece(piece_name, player):
-    #Append to dictionary containing discarded pieces
+    #Delete from dictionary of current pieces
     del player.remaining_pieces[piece_name]
+    #Append to dictionary containing discarded pieces
     player.discarded_pieces[piece_name] = get_pieces()[piece_name]
