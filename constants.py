@@ -1,5 +1,5 @@
 #Developer options for debugging
-VERBOSITY = 0
+VERBOSITY = 1
 
 #Board size
 ROW_COUNT = 14

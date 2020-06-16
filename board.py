@@ -30,12 +30,14 @@ class Board:
                 for j in range(piece["arr"].shape[1]):
                     if piece["arr"][i][j] == 1 and self.board[x][y] == empty:
                         self.board[x][y] = player.number * piece["arr"][i][j]
-                    if (x, y) == pos:
+                    if [x, y] == pos:
                         is_within_starting_pos = True
                     y += 1
                 x += 1
                 y = piece["place_on_board_at"][1]
             if not is_within_starting_pos:
+                if constants.VERBOSITY > 0:
+                    print("Could not fit piece in starting position in 1st move")
                 return False
             player.is_1st_move = False
         else:
@@ -52,11 +54,12 @@ class Board:
         
         pieces.discard_piece(piece["piece"], player)
         player.empty_current_piece()
-        update_board_corners(player, opponent_player)
+        self.update_board_corners(player, opponent_player)
         self.turn_number += 1
         player.update_score()
         if constants.VERBOSITY > 0:
             print("At turn number",self.turn_number,"board is:","\n",self.board)
+            print("Current player's score is:", player.score, " and opponent's score is", opponent_player.score)
         return True
     
     """We check the corners of a certain coordinate on the board as such:
@@ -73,7 +76,7 @@ class Board:
             for x in range(self.board.shape[0]):
                 for y in range(self.board.shape[1]):
                     if self.board[x][y] == p.number:
-                        tl, tr, bl, br = check_surrounding_piece_coords(x, y)
+                        tl, tr, bl, br = self.check_surrounding_piece_coords(x, y)
                         if tl:
                             p.board_corners["tl"].append([x-1, y-1])
                         if bl:
@@ -159,6 +162,7 @@ class Board:
         ai_player.discarded_pieces = ai_player.discarded_pieces_copy
         opponent_player.discarded_pieces = opponent_player.discarded_pieces_copy
 
+#For 1 unit square of a given piece, we check to see which corners are empty
 def get_corners_of_piece(piece_arr, i, j):
     tl, tr, bl, br = True, True, True, True
     x_lim, y_lim = piece_arr.shape[0], piece_arr.shape[1]

@@ -1,4 +1,4 @@
-import numpy as np, random, ..board
+import numpy as np, random, board, constants
 #This computer "player" just keeps playing random moves
 #This random moves player serves as a good opponent for our actual AI
 
@@ -9,13 +9,23 @@ def return_random_move(player):
         return random.choice(board.return_all_pending_moves(player))
 
 def return_first_turn_move(player):
-    pieces = player.remaining_pieces.keys()
+    pieces = list(player.remaining_pieces.keys())
     #Lets not use the 1x1 piece in the beginning
     pieces.remove("piece1")
     piece = random.choice(pieces)
-    piece_arr = pieces[piece]
-    flip = random.choice(range(player.remaining_pieces[piece]["flips"] - 1))
-    rot = random.choice(range(player.remaining_pieces[piece]["rots"] - 1))
+    if constants.VERBOSITY > 0:
+        print("RandomMovesBot chooses piece: ", piece)
+    piece_arr = player.remaining_pieces[piece]["arr"]
+    flips = player.remaining_pieces[piece]["flips"] - 1
+    if flips > 0:
+        flip = random.choice(range(flips))
+    else:
+        flip = 0
+    rots = player.remaining_pieces[piece]["rots"] - 1
+    if rots > 0:
+        rot = random.choice(range(rots))
+    else:
+        rot = 0
     if player.number == 1:
         start_x, start_y = constants.STARTING_PTS["player1"][0], \
                            constants.STARTING_PTS["player1"][1]

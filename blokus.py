@@ -1,6 +1,7 @@
 import numpy as np, pygame
 import board, pieces, constants, player, draw_elements
 from board import Board
+from AI import AIManager
 
 def pygame_init():
     pygame.init()
@@ -62,34 +63,26 @@ def event_handler(gameboard, active_player, opponent, game_over, offset_list,\
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if constants.VERBOSITY > 0:
                 print(pygame.mouse.get_pos())
-            if active_player.number == 1:
-                offset_list, selected = draw_elements.generate_element_offsets(p1_rects, event)
-            elif active_player.number == 2:
-                offset_list, selected = draw_elements.generate_element_offsets(p2_rects, event)
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1: #Left mouse click
+            if event.button == 1 and selected is not None: #Left mouse click
                 selected = None
+            else:
+                if active_player.number == 1:
+                    offset_list, selected = draw_elements.generate_element_offsets(p1_rects, event)
+                elif active_player.number == 2:
+                    offset_list, selected = draw_elements.generate_element_offsets(p2_rects, event)
+        elif event.type == pygame.MOUSEBUTTONUP:
             if is_piece_selected:
                 if gameboard.fit_piece(active_player.current_piece, active_player, opponent):
                     active_player, opponent = player.switch_active_player(active_player, opponent)
         elif event.type == pygame.MOUSEMOTION:
             if selected is not None:
-                i = 0
-                for piece in p1_rects[selected]:
-                    for count, unit_sq in enumerate(piece):
-                        offset_x = event.pos[0] + offset_list[i][0]
-                        offset_y = event.pos[1] + offset_list[i][1]
-                        unit_sq.x, unit_sq.y = offset_x, offset_y
-                        if count == 0:
-                            unit_sq.w += 39
-                            unit_sq.h += 39
-                        elif count in [1,4]:
-                            unit_sq.w += 39
-                        elif count == 3:
-                            unit_sq.x += 39
-                        else:
-                            unit_sq.h += 39
-                        i += 1
+                rect = p1_rects[selected]
+                for i in range(len(rect)):
+                    rect[i].x = event.pos[0] + offset_list[i][0]
+                    rect[i].y = event.pos[1] + offset_list[i][1]
+                    rect[i].h += 39
+                    rect[i].w += 39
+                    print(rect[i].x, rect[i].y, rect[i].h, rect[i].w, event.pos)
     #for keys in pygame.key.get_pressed():
     #    key_controls(keys)
     return game_over, active_player, opponent, offset_list, selected
@@ -104,10 +97,11 @@ def init(player1_is_ai, player2_is_ai,
 
 def game_loop():
     game_over = False
-    selected, p1_rects, p2_rects = None, None, None
+    selected, p1_rects, p2_rects = None, [], []
     offset_list = []
 
-    gameboard, player1, player2 = init(False, True, constants.PURPLE, constants.ORANGE, None, "MinimaxAI")
+    #gameboard, player1, player2 = init(False, True, constants.PURPLE, constants.ORANGE, None, "MinimaxAI")
+    gameboard, player1, player2 = init(True, True, constants.PURPLE, constants.ORANGE, "RandomMovesBot", "MinimaxAI")
     active_player, opponent = player1, player2
 
     while not game_over:
@@ -119,6 +113,8 @@ def game_loop():
         #When AI player's turn, let the AIManager handle the move making
         #When human player's turn, listen for input
         if active_player.is_ai:
+            if not active_player.is_1st_move:
+                pygame.time.wait(7000)
             AIManager.main(gameboard, active_player, opponent)
             active_player, opponent = player.switch_active_player(active_player, opponent)
         else:
@@ -128,17 +124,19 @@ def game_loop():
         # Set the screen background
         screen.fill(constants.BLACK)
         
-        draw_elements.draw_gameboard(background, gameboard.board)
-        
         draw_elements.draw_infobox(background, active_player, opponent)
-        screen.blit(background, (0,0))
         draw_elements.draw_pieces(background, p1_rects, p2_rects, player1.color, player2.color)
-
+        draw_elements.draw_gameboard(background, gameboard.board)
+        screen.blit(background, (0,0))
+        #print(draw_elements.get_square_under_mouse(gameboard.board))
+        
         # Limit to 60 frames per second
         clock.tick(60)
  
         # Update the screen with what is drawn.
         pygame.display.update()
+        if selected is None:
+            background.fill(constants.BLACK)
 
 screen, background = pygame_init()
 # Used to manage how fast the screen updates
