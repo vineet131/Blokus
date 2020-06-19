@@ -114,7 +114,7 @@ def game_loop():
         #When human player's turn, listen for input
         if active_player.is_ai:
             if not active_player.is_1st_move:
-                pygame.time.wait(7000)
+                pygame.time.wait(1000)
             AIManager.main(gameboard, active_player, opponent)
             active_player, opponent = player.switch_active_player(active_player, opponent)
         else:

@@ -1,3 +1,5 @@
+import sys, os
+
 #Developer options for debugging
 VERBOSITY = 1
 
@@ -33,3 +35,10 @@ STARTING_PTS = \
 #For Minimax, we define infinity and minus infinity
 INFINITY = 10000
 M_INFINITY = -10000
+
+def write_to_log(msg):
+    log_folder = os.path.abspath(os.path.dirname(sys.argv[0]))
+    log_file = os.path.join(log_folder, "log.txt")
+    with open(log_file, "a+") as f:
+        f.write("\n\n\n"+msg)
+        f.close()

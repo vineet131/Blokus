@@ -17,7 +17,12 @@ class Board:
     #For AI: We pass one move from the dict returned by return_all_pending_moves
     #        or a dict in a similar format as the piece parameter
     def fit_piece(self, piece, player, opponent_player):
-        x, y = piece["place_on_board_at"][0], piece["place_on_board_at"][1]
+        piece_x_rng = range(piece["arr"].shape[0])
+        piece_y_rng = range(piece["arr"].shape[1])
+        board_x_rng = range(piece["place_on_board_at"][0],\
+                      piece["place_on_board_at"][0] + piece["arr"].shape[0])
+        board_y_rng = range(piece["place_on_board_at"][1],\
+                      piece["place_on_board_at"][1] + piece["arr"].shape[1])
         
         if player.is_1st_move:
             if player.number == constants.PLAYER1_VALUE:
@@ -26,45 +31,42 @@ class Board:
                 pos = constants.STARTING_PTS["player2"]
             
             is_within_starting_pos = False
-            for i in range(piece["arr"].shape[0]):
-                for j in range(piece["arr"].shape[1]):
+            for i, x in zip(piece_x_rng, board_x_rng):
+                for j, y in zip(piece_y_rng, board_y_rng):
                     if piece["arr"][i][j] == 1 and self.board[x][y] == empty:
                         self.board[x][y] = player.number * piece["arr"][i][j]
                     if [x, y] == pos:
                         is_within_starting_pos = True
-                    y += 1
-                x += 1
-                y = piece["place_on_board_at"][1]
             if not is_within_starting_pos:
                 if constants.VERBOSITY > 0:
                     print("Could not fit piece in starting position in 1st move")
                 return False
             player.is_1st_move = False
         else:
-            if check_is_move_valid(piece["arr"], piece["place_on_board_at"]):
-                for i in range(piece["arr"].shape[0]):
-                    for j in range(piece["arr"].shape[1]):
+            if self.check_is_move_valid(piece["arr"], player, piece["place_on_board_at"]):
+                for i, x in zip(piece_x_rng, board_x_rng):
+                    for j, y in zip(piece_y_rng, board_y_rng):
                         if piece["arr"][i][j] == 1:
                             self.board[x][y] = player.number * piece["arr"][i][j]
-                        y += 1
-                    x += 1
-                    y = piece["place_on_board_at"][1]
             else:
+                if constants.VERBOSITY > 0:
+                    print("In fit_piece, move turned out to be invalid")
+                    print(piece)
                 return False
         
         pieces.discard_piece(piece["piece"], player)
         player.empty_current_piece()
-        self.update_board_corners(player, opponent_player)
         self.turn_number += 1
         player.update_score()
         if constants.VERBOSITY > 0:
-            print("At turn number",self.turn_number,"board is:","\n",self.board)
-            print("Current player's score is:", player.score, " and opponent's score is", opponent_player.score)
+            print("At turn number", self.turn_number, "board is:", "\n", self.board)
+            print("Current player's score is:", player.score, "and opponent's score is", opponent_player.score)
+        self.update_board_corners(player, opponent_player)
         return True
     
     """We check the corners of a certain coordinate on the board as such:
     tl   0   tr
-    0  (i,j) 0
+    0  (x,y) 0
     bl   0   br
     """
     def update_board_corners(self, player, opponent_player):
@@ -85,25 +87,36 @@ class Board:
                             p.board_corners["tr"].append([x-1, y+1])
                         if br:
                             p.board_corners["br"].append([x+1,y+1])
+        if constants.VERBOSITY > 0:
+            print("Board corners for current player:", player.board_corners)
+            print("Board corners for opponent player:", opponent_player.board_corners)
     
     def check_surrounding_piece_coords(self, x, y):
         tl, tr, bl, br = True, True, True, True
-        if x+1 > rows or self.board[x+1][y] != empty:
-            bl, br = False, False
-        if x+1 > rows or y+1 > cols or self.board[x+1][y+1] != empty:
-            br = False
-        if y+1 > cols or self.board[x][y+1] != empty:
-            tr, br = False, False
-        if x-1 < 0 or y+1 > cols or self.board[x-1][y+1] != empty:
-            tr = False
-        if x-1 < 0 or self.board[x-1][y] != empty:
-            tl, tr = False, False
-        if x-1 < 0 or y-1 < 0 or self.board[x-1][y-1] != empty:
-            tl = False
-        if y-1 < 0 or self.board[x][y-1] != empty:
-            tl, bl = False, False
-        if x+1 > rows or y-1 < 0 or self.board[x+1][y-1] != empty:
-            bl = False
+        try:
+            if self.board[x+1][y] != empty: bl, br = False, False
+        except IndexError: bl, br = False, False
+        try:
+            if self.board[x+1][y+1] != empty: br = False
+        except IndexError: br = False
+        try:
+            if self.board[x][y+1] != empty: tr, br = False, False
+        except IndexError: tr, br = False, False
+        try:
+            if x-1 >= 0 and self.board[x-1][y+1] != empty: tr = False
+        except IndexError: tr = False
+        try:
+            if x-1 >= 0 and self.board[x-1][y] != empty: tl, tr = False, False
+        except IndexError: tl, tr = False, False
+        try:
+            if x-1 >= 0 and y-1 >= 0 and self.board[x-1][y-1] != empty: tl = False
+        except IndexError: tl = False
+        try:
+            if y-1 >= 0 and self.board[x][y-1] != empty: tl, bl = False, False
+        except IndexError: tl, bl = False, False
+        try:
+            if y-1 >= 0 and self.board[x+1][y-1] != empty: bl = False
+        except IndexError: bl = False
         return tl, tr, bl, br
     
     """Piece is the array of the piece being placed
@@ -115,29 +128,30 @@ class Board:
     def check_is_move_valid(self, piece_arr, player, coords):
         is_allowed = False
         is_corner_exists = False
-        i, j = 0, 0
-        x, y = coords[0], coords[1]
-        for i in range(piece_arr.shape[0]):
-            for j in range(piece_arr.shape[1]):
+        
+        piece_x_rng = range(piece_arr.shape[0])
+        piece_y_rng = range(piece_arr.shape[1])
+        board_x_rng = range(coords[0], coords[0] + piece_arr.shape[0])
+        board_y_rng = range(coords[1], coords[1] + piece_arr.shape[1])
+
+        for i, x in zip(piece_x_rng, board_x_rng):
+            for j, y in zip(piece_y_rng, board_y_rng):
                 if piece_arr[i][j] == 1 and self.board[x][y] == empty:
                     tl, tr, bl, br = get_corners_of_piece(piece_arr, i, j)
                     if tl:
-                        if (x+1, y+1) in player.board_corners["br"]:
+                        if [x, y] in player.board_corners["br"]:
                             is_corner_exists = True
                     if bl:
-                        if (x-1, y+1) in player.board_corners["tr"]:
+                        if [x, y] in player.board_corners["tr"]:
                             is_corner_exists = True
                     if tr:
-                        if (x+1, y-1) in player.board_corners["bl"]:
+                        if [x, y] in player.board_corners["bl"]:
                             is_corner_exists = True
                     if br:
-                        if (x-1, y-1) in player.board_corners["tl"]:
+                        if [x, y] in player.board_corners["tl"]:
                             is_corner_exists = True
                 elif piece_arr[i][j] == 1 and self.board[x][y] != empty:
                     return False
-                y += 1
-            x += 1
-            y = coords[1]
         if is_corner_exists:
             is_allowed = True
         return is_allowed
@@ -165,23 +179,30 @@ class Board:
 #For 1 unit square of a given piece, we check to see which corners are empty
 def get_corners_of_piece(piece_arr, i, j):
     tl, tr, bl, br = True, True, True, True
-    x_lim, y_lim = piece_arr.shape[0], piece_arr.shape[1]
-    if i+1 > x_lim or piece_arr[i+1][j] != empty:
-        bl, br = False, False
-    if i+1 > x_lim or j+1 > y_lim or piece_arr[i+1][j+1] != empty:
-        br = False
-    if j+1 > y_lim or piece_arr[i][j+1] != empty:
-        tr, br = False, False
-    if i-1 < 0 or j+1 > y_lim or piece_arr[i-1][j+1] != empty:
-        tr = False
-    if i-1 < 0 or piece_arr[i-1][j] != empty:
-       tl, tr = False, False
-    if i-1 < 0 or j-1 < 0 or piece_arr[i-1][j-1] != empty:
-        tl = False
-    if j-1 < 0 or piece_arr[i][j-1] != empty:
-        tl, bl = False, False
-    if i+1 > x_lim or j-1 < 0 or piece_arr[i+1][j-1] != empty:
-        bl = False
+    try:
+        if piece_arr[i+1][j] == 1: bl, br = False, False
+    except IndexError: pass
+    try:
+        if piece_arr[i+1][j+1] == 1: br = False
+    except IndexError: pass
+    try:
+        if piece_arr[i][j+1] == 1: tr, br = False, False
+    except IndexError: pass
+    try:
+        if i-1 >= 0 and piece_arr[i-1][j+1] == 1: tr = False
+    except IndexError: pass
+    try:
+        if i-1 >= 0 and piece_arr[i-1][j] == 1: tl, tr = False, False
+    except IndexError: pass
+    try:
+        if i-1 >= 0 and j-1 >=0 and piece_arr[i-1][j-1] == 1: tl = False
+    except IndexError: pass
+    try:
+        if j-1 >=0 and piece_arr[i][j-1] == 1: tl, bl = False, False
+    except IndexError: pass
+    try:
+        if j-1 >=0 and piece_arr[i+1][j-1] == 1: bl = False
+    except IndexError: pass
     return tl, tr, bl, br
 
 #For AIs, we get a list of all the possible remaining moves. To do this,
@@ -196,11 +217,11 @@ def return_all_pending_moves(player, mode = "ai"):
     for piece in pieces.keys():
         current_piece = pieces[piece]["arr"]
         #Iterate over number of possible flips for each piece
-        for flip in range(pieces[piece]["flips"] - 1):
-            if flip > 0:
+        for flip in range(pieces[piece]["flips"]):
+            if not flip == 0:
                 current_piece = np.flipud(current_piece)
             #Iterate over number of possible rotations for each piece
-            for rot in range(pieces[piece]["rots"] - 1):
+            for rot in range(pieces[piece]["rots"]):
                 current_piece = np.rot90(current_piece, k = 1)
                 #Get the corners of current piece configuration
                 for i in range(current_piece.shape[0]):
@@ -208,24 +229,31 @@ def return_all_pending_moves(player, mode = "ai"):
                         tl, tr, bl, br = get_corners_of_piece(current_piece, i, j)
                         if tl and len(player.board_corners["br"]) > 0:
                             for val in player.board_corners["br"]:
-                                pending_moves_list.append({"piece": piece, "flipped": flip,
-                                "rotated": rot, "place_on_board_at": [val[0] - i, val[1] - j]})
+                                pending_moves_list.append({"piece": piece, "flipped": flip,\
+                                "arr": current_piece, "rotated": rot,\
+                                "place_on_board_at": [val[0] - i, val[1] - j]})
                         if tr and len(player.board_corners["bl"]) > 0:
                             for val in player.board_corners["bl"]:
-                                pending_moves_list.append({"piece": piece, "flipped": flip,
-                                "rotated": rot,"place_on_board_at": [val[0] - i, val[1] - j]})
+                                pending_moves_list.append({"piece": piece, "flipped": flip,\
+                                "arr": current_piece, "rotated": rot,\
+                                "place_on_board_at": [val[0] - i, val[1] - j]})
                         if bl and len(player.board_corners["tr"]) > 0:
                             for val in player.board_corners["tr"]:
-                                pending_moves_list.append({"piece": piece, "flipped": flip,
-                                "rotated": rot, "place_on_board_at": [val[0] - i, val[1] - j]})
+                                pending_moves_list.append({"piece": piece, "flipped": flip,\
+                                "arr": current_piece, "rotated": rot,\
+                                "place_on_board_at": [val[0] - i, val[1] - j]})
                         if br and len(player.board_corners["tl"]) > 0:
                             for val in player.board_corners["tl"]:
-                                pending_moves_list.append({"piece": piece, "flipped": flip,
-                                "rotated": rot, "place_on_board_at": [val[0] - i, val[1] - j]})
+                                pending_moves_list.append({"piece": piece, "flipped": flip,\
+                                "arr": current_piece, "rotated": rot,\
+                                "place_on_board_at": [val[0] - i, val[1] - j]})
                     #If we just want to check if the game is over or not, we dont need to
                     #iterate every possibility
                     if mode == "is_game_over" and len(pending_moves_list) > 0:
                         return pending_moves_list
+    if constants.VERBOSITY > 0:
+        msg = "Pending moves are"+str(pending_moves_list)
+        #constants.write_to_log(msg)
     return pending_moves_list
 
 def is_game_over(board, player1, player2):

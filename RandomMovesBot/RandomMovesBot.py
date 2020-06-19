@@ -15,30 +15,35 @@ def return_first_turn_move(player):
     piece = random.choice(pieces)
     if constants.VERBOSITY > 0:
         print("RandomMovesBot chooses piece: ", piece)
+    
     piece_arr = player.remaining_pieces[piece]["arr"]
-    flips = player.remaining_pieces[piece]["flips"] - 1
-    if flips > 0:
-        flip = random.choice(range(flips))
-    else:
-        flip = 0
-    rots = player.remaining_pieces[piece]["rots"] - 1
-    if rots > 0:
-        rot = random.choice(range(rots))
-    else:
-        rot = 0
+    
+    flips = player.remaining_pieces[piece]["flips"]
+    flip = random.choice(range(flips))
+
+    rots = player.remaining_pieces[piece]["rots"]
+    rot = random.choice(range(rots))
+
     if player.number == 1:
-        start_x, start_y = constants.STARTING_PTS["player1"][0], \
-                           constants.STARTING_PTS["player1"][1]
+        start_x, start_y = constants.STARTING_PTS["player1"]
     elif player.number == 2:
-        start_x, start_y = constants.STARTING_PTS["player2"][0], \
-                           constants.STARTING_PTS["player2"][1]
-    board_x = start_x - random.choice(range(piece_arr.shape[0]))
-    board_y = start_y - random.choice(range(piece_arr.shape[1]))
+        start_x, start_y = constants.STARTING_PTS["player2"]
     
     piece_arr = np.rot90(piece_arr, k = rot)
     if flip == 1:
         piece_arr = np.flipud(piece_arr)
+    
+    choice_x = random.choice(range(piece_arr.shape[0]))
+    choice_y = random.choice(range(piece_arr.shape[1]))
+    #The unit sq randomly selected for the piece must be a valid unit sq 
+    while piece_arr[choice_x][choice_y] != 1:
+        choice_x = random.choice(range(piece_arr.shape[0]))
+        choice_y = random.choice(range(piece_arr.shape[1]))
+    board_x = start_x - choice_x
+    board_y = start_y - choice_y
 
     move = {"piece" : piece, "arr" : piece_arr, "rotated" : rot, "flipped" : flip, \
             "place_on_board_at" : [board_x, board_y]}
+    if constants.VERBOSITY > 0:
+        print("Chosen first move for RandomMovesBot:", move)
     return move
