@@ -101,26 +101,28 @@ def game_loop():
     offset_list = []
 
     #gameboard, player1, player2 = init(False, True, constants.PURPLE, constants.ORANGE, None, "MinimaxAI")
-    gameboard, player1, player2 = init(True, True, constants.PURPLE, constants.ORANGE, "RandomMovesBot", "MinimaxAI")
+    #gameboard, player1, player2 = init(True, True, constants.PURPLE, constants.ORANGE, "RandomMovesBot", "MinimaxAI")
+    gameboard, player1, player2 = init(True, True, constants.PURPLE, constants.ORANGE, "RandomMovesBot", "RandomMovesBot")
     active_player, opponent = player1, player2
 
     while not game_over:
-        if active_player.number == 1:
-            p1_rects, p2_rects = draw_elements.init_piece_rects(background, active_player, opponent)
-        elif active_player.number == 2:
-            p1_rects, p2_rects = draw_elements.init_piece_rects(background, opponent, active_player)
+        
         #Two kinds of players, human and AI. We use that as our basis for checking and making turn based moves.
         #When AI player's turn, let the AIManager handle the move making
         #When human player's turn, listen for input
         if active_player.is_ai:
             if not active_player.is_1st_move:
-                pygame.time.wait(1000)
+                pygame.time.wait(20)
             AIManager.main(gameboard, active_player, opponent)
             active_player, opponent = player.switch_active_player(active_player, opponent)
         else:
             game_over, active_player, opponent, offset_list, selected \
             = event_handler(gameboard, active_player, opponent, game_over, offset_list, selected, p1_rects, p2_rects)
         
+        if active_player.number == 1:
+            p1_rects, p2_rects = draw_elements.init_piece_rects(background, active_player, opponent)
+        elif active_player.number == 2:
+            p1_rects, p2_rects = draw_elements.init_piece_rects(background, opponent, active_player)
         # Set the screen background
         screen.fill(constants.BLACK)
         
@@ -137,6 +139,9 @@ def game_loop():
         pygame.display.update()
         if selected is None:
             background.fill(constants.BLACK)
+        
+        if board.is_game_over(gameboard, active_player, opponent):
+            game_over = True
 
 screen, background = pygame_init()
 # Used to manage how fast the screen updates

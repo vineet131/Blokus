@@ -21,7 +21,7 @@ PURPLE = [128, 0, 128]
 ORANGE = [255, 165, 0]
 
 #The empty squares on the board shall be populated by this value
-BOARD_FILL_VALUE = -1
+BOARD_FILL_VALUE = 0
 #All squares corresponding to player 1 & 2 on the board shall be populated
 #by these values
 PLAYER1_VALUE = 1

@@ -127,6 +127,9 @@ def draw_pieces(canvas, p1_rects, p2_rects, p1_color, p2_color):
     for piece in p2_rects:
         for unit_sq in piece:
             pygame.draw.rect(canvas, p2_color, unit_sq)
+            unit_sq.x -= MARGIN
+            unit_sq.y -= MARGIN
+            pygame.draw.rect(canvas, constants.WHITE, unit_sq, MARGIN)
 
 def draw_infobox(canvas, player1, player2):
     font = pygame.font.SysFont("Trebuchet MS", 30)

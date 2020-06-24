@@ -8,16 +8,15 @@ def main(gameboard, ai_player, opponent_player):
     if ai_player.is_1st_move:
         best_move = do_first_move(ai_player)
     else:
-        board = copy.deepcopy(gameboard)
-        ai_copy = copy.deepcopy(ai_player)
-        opponent_copy = copy.deepcopy(opponent_player)
+        for move in return_all_pending_moves(gameboard, ai_player):
+            board = copy.deepcopy(gameboard)
+            ai_copy = copy.deepcopy(ai_player)
+            opponent_copy = copy.deepcopy(opponent_player)
 
-        for move in return_all_pending_moves(ai_copy):
-            board.retain_board(ai_copy, opponent_copy)
+            #copied_state = retain_board(board, ai_copy, opponent_copy)
             if board.fit_piece(move, ai_copy, opponent_copy):
                 score = do_minimax(constants.INFINITY, constants.M_INFINITY, board, \
                                    ai_copy, opponent_copy, False)
-                board.restore_board(ai_copy, opponent_copy)
                 if score > best_score:
                     best_score = score
                     best_move = move
@@ -63,47 +62,49 @@ def do_first_move(player):
         print("Chosen first move for MinimaxAI:", first_move)
     return first_move
 
-def do_minimax(alpha, beta, board, ai_player, opponent_player, \
-               maximizing_player, depth = 3):
+def do_minimax(alpha, beta, gameboard, ai_player, opponent_player, \
+               maximizing_player, depth = 2):
     
     if maximizing_player:
-        if depth == 0 or len(return_all_pending_moves(ai_player)) == 0:
+        if depth == 0 or len(return_all_pending_moves(gameboard, ai_player)) == 0:
             return scoring_fn(ai_player.remaining_pieces)
         
-        return get_max(alpha, beta, board, ai_player, opponent_player, depth)
+        return get_max(alpha, beta, gameboard, ai_player, opponent_player, depth)
     
     else:
-        if depth == 0 or len(return_all_pending_moves(opponent_player)) == 0:
+        if depth == 0 or len(return_all_pending_moves(gameboard, opponent_player)) == 0:
             return scoring_fn(opponent_player.remaining_pieces)
 
-        return get_min(alpha, beta, board, ai_player, opponent_player, depth)
+        return get_min(alpha, beta, gameboard, ai_player, opponent_player, depth)
 
-def get_max(alpha, beta, board, ai_player, opponent_player, depth):
+def get_max(alpha, beta, gameboard, ai_player, opponent_player, depth):
     max_eval = constants.M_INFINITY
-    ai_moves = return_all_pending_moves(ai_player)
+    ai_moves = return_all_pending_moves(gameboard, ai_player)
 
     for move in ai_moves:
-        board.retain_board(ai_player, opponent_player)
-        if board.fit_piece(move, ai_player, opponent_player):
-            eval = do_minimax(alpha, beta, board, ai_player, \
-                              opponent_player, False, depth - 1)
-            board.restore_board(ai_player, opponent_player)
+        board_copy = copy.deepcopy(gameboard)
+        ai_copy = copy.deepcopy(ai_player)
+        opponent_copy = copy.deepcopy(opponent_player)
+        if board_copy.fit_piece(move, ai_copy, opponent_copy):
+            eval = do_minimax(alpha, beta, board_copy, ai_copy, \
+                              opponent_copy, False, depth - 1)
             max_eval = max(max_eval, eval)
             alpha = max(alpha, eval)
             if beta <= alpha:
                 break
     return max_eval
 
-def get_min(alpha, beta, board, ai_player, opponent_player, depth):
+def get_min(alpha, beta, gameboard, ai_player, opponent_player, depth):
     min_eval = constants.INFINITY
-    player_moves = return_all_pending_moves(opponent_player)
+    player_moves = return_all_pending_moves(gameboard, opponent_player)
 
     for move in player_moves:
-        board.retain_board(ai_player, opponent_player)
-        if board.fit_piece(move, opponent_player, ai_player):
-            eval = do_minimax(alpha, beta, board, ai_player, \
-                              opponent_player, True, depth - 1)
-            board.restore_board(ai_player, opponent_player)
+        board_copy = copy.deepcopy(gameboard)
+        ai_copy = copy.deepcopy(ai_player)
+        opponent_copy = copy.deepcopy(opponent_player)
+        if board_copy.fit_piece(move, opponent_copy, ai_copy):
+            eval = do_minimax(alpha, beta, gameboard, ai_copy, \
+                              opponent_copy, True, depth - 1)
             min_eval = min(min_eval, eval)
             beta = min(beta, eval)
             if beta <= alpha:
