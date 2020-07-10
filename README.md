@@ -1,4 +1,4 @@
-# Blokus
+# Blokus (Development currently ongoing)
 A Python implementation of the Mattell game Blokus, with an option to add new AIs
 
 <b>1. Requirements:</b>
@@ -13,7 +13,7 @@ python -m pip install numpy pygame
 python3 -m pip install numpy pygame
 
 Tested on:
-- Python 3.8.2
+- Python 3.7.3
 - Numpy 1.18.4
 - Pygame 1.9.6
 
