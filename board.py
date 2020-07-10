@@ -9,7 +9,7 @@ class Board:
 
     def __init__(self):
         self.board = np.array([[empty for i in range(rows)] for j in range(cols)])
-        self.turn_number = 0
+        self.turn_number = 1
     
     #Fit a given piece at a given position on the board
     #For human player: We pass the player.current_piece as the piece parameter
@@ -35,6 +35,10 @@ class Board:
                     if [x, y] == pos:
                         is_within_starting_pos = True
             if not is_within_starting_pos:
+                for i, x in zip(piece_x_rng, board_x_rng):
+                    for j, y in zip(piece_y_rng, board_y_rng):
+                        if piece["arr"][i][j] == 1:
+                            self.board[x][y] = empty
                 if constants.VERBOSITY > 0:
                     print("Could not fit piece in starting position in 1st move")
                 return False
@@ -54,6 +58,7 @@ class Board:
         pieces.discard_piece(piece["piece"], player)
         player.empty_current_piece()
         self.turn_number += 1
+        player.turn_number += 1
         player.update_score()
         if constants.VERBOSITY > 0:
             print("At turn number", self.turn_number, "board is:", "\n", self.board)
@@ -205,28 +210,17 @@ def get_corners_of_piece(piece_arr, i, j):
 def return_all_pending_moves(gameboard, player, mode = "ai"):
     pending_moves_list = []
 
-    #Take the dictionary of remaining pieces
-    pieces = player.remaining_pieces
     #Iterate over that dictionary of remaining pieces
-    for piece in pieces.keys():
-        current_piece = pieces[piece]["arr"]
-        #Iterate over number of possible flips for each piece
-        for flip in range(pieces[piece]["flips"]):
-            if not flip == 0:
-                current_piece = np.flipud(current_piece)
-            #Iterate over number of possible rotations for each piece
-            for rot in range(pieces[piece]["rots"]):
-                current_piece = np.rot90(current_piece, k = 1)
-                #Get the corners of 1 unit sq in current piece configuration
-                board_positions = gameboard.validate_and_return_move_positions(current_piece, player)
-                for pos in board_positions:
-                    pending_moves_list.append({"piece": piece, "flipped": flip,\
-                        "arr": current_piece, "rotated": rot, "place_on_board_at": pos})
-                    #If we just want to check if the game is over or not, we dont need to
-                    #iterate every possibility. Even if a single move is present, the game
-                    #ain't over yet
-                    if mode == "is_game_over" and len(pending_moves_list) > 0:
-                        return pending_moves_list
+    for current_piece in pieces.get_all_piece_states(player):
+        #Get the corners of 1 unit sq in current piece configuration
+        board_positions = gameboard.validate_and_return_move_positions(current_piece["arr"], player)
+        for pos in board_positions:
+            pending_moves_list.append({"piece": current_piece["piece"], "flipped": current_piece["flipped"],\
+                        "arr": current_piece["arr"], "rotated": current_piece["rotated"], "place_on_board_at": pos})
+            #If we just want to check if the game is over or not, we dont need to iterate every possibility.
+            #Even if a single move is present, the game ain't over yet
+            if mode == "is_game_over" and len(pending_moves_list) > 0:
+                return pending_moves_list
     if constants.VERBOSITY > 0:
         msg = "Pending moves are"+str(pending_moves_list)
         print("Number of pending moves:", len(pending_moves_list))

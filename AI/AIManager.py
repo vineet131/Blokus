@@ -24,3 +24,4 @@ def main(gameboard, ai_player, opponent_player):
                 "The following move has failed:", move)
             print("The state of the gameboard is:", gameboard.board)
             raise Exception("AI piece was not fit")
+        return best_move

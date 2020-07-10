@@ -50,9 +50,6 @@ def return_first_turn_move(player):
 
     move = {"piece" : piece, "arr" : piece_arr, "rotated" : rot, "flipped" : flip, \
             "place_on_board_at" : [board_x, board_y]}
-    """if player.number == 1 and player.is_1st_move:
-        move = {"piece" : "piece10", "arr" : np.array([[1,1,1,1,1]]), "rotated" : 1, "flipped" : 0, \
-            "place_on_board_at" : [4, 1]}"""
     if constants.VERBOSITY > 0:
         print("Chosen first move for RandomMovesBot:", move)
     return move
