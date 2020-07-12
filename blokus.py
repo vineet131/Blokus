@@ -1,8 +1,7 @@
-import numpy as np, pygame
+import numpy as np, pygame, os
 import board, pieces, constants, player, drawElements
 from board import Board
 from AI import AIManager
-import os
 #Handles where the window position is drawn on the os
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (30,30)
 
@@ -13,7 +12,9 @@ class PygameClass:
         self.game_over = False
         self.selected = None
         self.gameboard = Board()
+        self.board_rects = drawElements.init_gameboard(self.gameboard.board)
         self.player1, self.player2 = self.init_players(False, True, constants.PURPLE, constants.ORANGE, None, "RandomMovesBot")
+        #self.player1, self.player2 = self.init_players(False, False, constants.PURPLE, constants.ORANGE, None, None)
         #self.player1, self.player2 = self.init_players(False, True, constants.PURPLE, constants.ORANGE, None, "MinimaxAI")
         #self.player1, self.player2 = self.init_players(True, True, constants.PURPLE, constants.ORANGE, "RandomMovesBot", "MinimaxAI")
         #self.player1, self.player2 = self.init_players(True, True, constants.PURPLE, constants.ORANGE, "RandomMovesBot", "RandomMovesBot")
@@ -47,18 +48,16 @@ class PygameClass:
                 if constants.VERBOSITY > 0:
                     print("Mouse pos:", pygame.mouse.get_pos())
                 #If a piece is selected, we see if we can place it on the board
-                if event.button == 1 and self.selected is not None: #event.button == 1 is left mouse click
-                    if drawElements.are_squares_within_board(active_player.current_piece):
-                        coords = [active_player.current_piece["rects"][0].x, active_player.current_piece["rects"][0].y]
-                        active_player.current_piece["place_on_board_at"] = drawElements.get_square_under_mouse(coords)
-                        print("Placing on board at", active_player.current_piece["place_on_board_at"])
+                if self.selected is not None:
+                    if drawElements.are_squares_within_board(active_player.current_piece, self.board_rects):
+                        coords = [active_player.current_piece["rects"][0].centerx, active_player.current_piece["rects"][0].centery]
+                        active_player.current_piece["place_on_board_at"] = drawElements.grid_to_array_coords(coords)
                         if self.gameboard.fit_piece(active_player.current_piece, active_player, opponent):
-                            active_player.current_piece = {"piece": "", "arr": [], "rotated": 0, "flipped": 0, "place_on_board_at": []}
+                            active_player.empty_current_piece()
                             self.selected = None
                             active_player, opponent = player.switch_active_player(active_player, opponent)
-                        else:
-                            active_player.current_piece = {"piece": "", "arr": [], "rotated": 0, "flipped": 0, "place_on_board_at": []}
-                            self.selected = None
+                    else:
+                        self.selected = None
                 #else we check if we need to pick up a piece
                 else:
                     self.offset_list, self.selected = drawElements.generate_element_offsets(active_player.remaining_pieces, event)
@@ -68,34 +67,22 @@ class PygameClass:
                         active_player.current_piece["rects"] = active_player.remaining_pieces[self.selected]["rects"]
             elif event.type == pygame.MOUSEBUTTONUP:
                 drawElements.init_piece_rects(self.player1.remaining_pieces, self.player2.remaining_pieces)
-            elif event.type == pygame.MOUSEMOTION:
-                pass
-            if self.selected is not None:
-                piece = active_player.remaining_pieces[self.selected]
-                for i, rect in enumerate(piece["rects"]):
-                    try: #If cursor moves outside game window
-                        rect.x = event.pos[0] + self.offset_list[i][0]
-                        rect.y = event.pos[1] + self.offset_list[i][1]
-                        rect.h = 48
-                        rect.w = 48
-                        print(rect.x, rect.y, rect.h, rect.w, event.pos)
-                    except AttributeError: pass
-        """for keys in pygame.key.get_pressed():
-            if self.selected is not None:
-                key_controls(keys)"""
+            elif event.type == pygame.KEYDOWN:
+                if self.selected is not None:
+                    key_controls(event, active_player)
         return active_player, opponent
     
-def key_controls(keys):
-    if keys[pygame.K_LEFT]:
+def key_controls(event, active_player):
+    if event.key == pygame.K_LEFT:
         #Rotate left
-        pass
-    if keys[pygame.K_RIGHT]:
+        active_player.rotate_current_piece(False)
+    elif event.key == pygame.K_RIGHT:
         #Rotate right
-        pass
-    if keys[pygame.K_UP]:
+        active_player.rotate_current_piece()
+    elif event.key == pygame.K_UP:
         #Flip along main diagonal
         pass
-    if keys[pygame.K_DOWN]:
+    elif event.key == pygame.K_DOWN:
         #Flip along other diagonal
         pass
 
@@ -134,8 +121,10 @@ def game_loop():
         pgc.background.fill(constants.BLACK)
         
         drawElements.draw_infobox(pgc.background, active_player, opponent)
-        drawElements.draw_gameboard(pgc.background, pgc.gameboard.board, pgc.selected)
-        drawElements.draw_pieces(pgc.background, pgc.player1, pgc.player2)
+        drawElements.draw_gameboard(pgc.background, pgc.board_rects, pgc.gameboard.board, active_player.current_piece)
+        drawElements.draw_pieces(pgc.background, pgc.player1, pgc.player2, active_player, pgc.selected)
+        if pgc.selected is not None:
+            drawElements.draw_selected_piece(pgc.background, pgc.offset_list, pygame.mouse.get_pos(), active_player.current_piece, active_player.color)
         
         pgc.screen.blit(pgc.background, (0,0))
         #print(drawElements.get_square_under_mouse(gameboard.board))

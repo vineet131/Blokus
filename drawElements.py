@@ -25,38 +25,42 @@ def draw_title_window():
     pass
 
 def grid_to_array_coords(pos):
-    #column = pos[0] // (WIDTH + MARGIN)
-    #row = pos[1] // (HEIGHT + MARGIN)
-    #gameboard[row][column] = 1
-    row = pos[0] - (piece_box_width + MARGIN) // (MARGIN + board_box_width)
-    col = pos[1] - (info_box_height + MARGIN) // (MARGIN + board_box_height)
-    #col = pos[0] // (piece_box_width + MARGIN)
-    #row = pos[1] // (info_box_height + MARGIN)
+    row = int((pos[0] - (piece_box_width + MARGIN)) // (MARGIN + board_box_width))
+    col = int((pos[1] - (info_box_height + MARGIN)) // (MARGIN + board_box_height))
     return [row, col]
 
 def array_to_grid_coords():
     pass
 
-def draw_gameboard(canvas, board_arr, selected):
-    mouse_row, mouse_col = get_square_under_mouse()
+def init_gameboard(board_arr):
+    rects = []
     for row in range(board_arr.shape[0]):
         for column in range(board_arr.shape[1]):
             box_width = piece_box_width + MARGIN + ((MARGIN + board_box_width) * column)
             box_height = info_box_height + MARGIN + ((MARGIN + board_box_height) * row)
             dims = [box_width, box_height, board_box_width, board_box_height]
-            rect = pygame.Rect(dims)
-            if [row, column] == [mouse_row, mouse_col] and \
-               board_arr[row][column] == constants.BOARD_FILL_VALUE and\
-               selected is not None:
-                rect.x -= MARGIN
-                rect.y -= MARGIN
-                rect.h += 2*MARGIN
-                rect.w += 2*MARGIN
-                pygame.draw.rect(canvas, constants.GREEN, rect)
-                rect.x += MARGIN
-                rect.y += MARGIN
-                rect.h -= 2*MARGIN
-                rect.w -= 2*MARGIN
+            rects.append(pygame.Rect(dims))
+    #print(rects)
+    return rects
+
+def draw_gameboard(canvas, board_rects, board_arr, current_piece):
+    mouse_row, mouse_col = get_square_under_mouse()
+    counter = 0
+    
+    for row in range(board_arr.shape[0]):
+        for column in range(board_arr.shape[1]):
+            rect = board_rects[counter]
+            for piece_rect in current_piece["rects"]:
+                if piece_rect.collidepoint(rect.centerx, rect.centery) and board_arr[row][column] == constants.BOARD_FILL_VALUE:
+                    rect.x -= MARGIN
+                    rect.y -= MARGIN
+                    rect.h += 2 * MARGIN
+                    rect.w += 2 * MARGIN
+                    pygame.draw.rect(canvas, constants.GREEN, rect)
+                    rect.x += MARGIN
+                    rect.y += MARGIN
+                    rect.h -= 2 * MARGIN
+                    rect.w -= 2 * MARGIN
             
             if board_arr[row][column] == constants.BOARD_FILL_VALUE:
                 pygame.draw.rect(canvas, constants.WHITE, rect)
@@ -71,6 +75,7 @@ def draw_gameboard(canvas, board_arr, selected):
             elif [row, column] == constants.STARTING_PTS["player2"]:
                 text = pygame.font.SysFont(None, 15).render("Player 2", True, constants.BLACK)
                 canvas.blit(text, [rect.x, rect.centery - 2])
+            counter += 1
 
 def get_square_under_mouse(rect_coords = None):
     if rect_coords is None:
@@ -87,8 +92,8 @@ def init_piece_rects(p1_remaining_pieces, p2_remaining_pieces):
     row, column = 0, 0
     for piece in p1_remaining_pieces.keys():
         piece_rects = []
-        for j in range(p1_remaining_pieces[piece]["arr"].shape[1]):
-            for i in range(p1_remaining_pieces[piece]["arr"].shape[0]):
+        for i in range(p1_remaining_pieces[piece]["arr"].shape[0]):
+            for j in range(p1_remaining_pieces[piece]["arr"].shape[1]):
                 if p1_remaining_pieces[piece]["arr"][i][j] == 1:
                     x = (one_piece_box_width * column) + ((MARGIN + single_piece_width) * j) + MARGIN
                     y = info_box_height + (one_piece_box_height * row) + ((MARGIN + single_piece_height) * i)
@@ -102,8 +107,8 @@ def init_piece_rects(p1_remaining_pieces, p2_remaining_pieces):
     row, column = 0, 0
     for piece in p2_remaining_pieces.keys():
         piece_rects = []
-        for j in range(p2_remaining_pieces[piece]["arr"].shape[1]):
-            for i in range(p2_remaining_pieces[piece]["arr"].shape[0]):
+        for i in range(p2_remaining_pieces[piece]["arr"].shape[0]):
+            for j in range(p2_remaining_pieces[piece]["arr"].shape[1]):
                 if p2_remaining_pieces[piece]["arr"][i][j] == 1:
                     x = piece_box_width + board_width + (one_piece_box_width * column) + ((MARGIN + single_piece_width) * j) + MARGIN
                     y = info_box_height + (one_piece_box_height * row) + ((MARGIN + single_piece_height) * i)
@@ -128,39 +133,62 @@ def generate_element_offsets(remaining_pieces, event):
         for chosen_piece in remaining_pieces[selected]["rects"]:
             selected_offset_x = chosen_piece.x - event.pos[0]
             selected_offset_y = chosen_piece.y - event.pos[1]
-            print("Element offsets x and y:", selected_offset_x, selected_offset_y)
             offset_list.append([selected_offset_x, selected_offset_y])
     return offset_list, selected
 
-def draw_pieces(canvas, player1, player2):
+def draw_pieces(canvas, player1, player2, active_player, selected):
     p1_pieces, p2_pieces = player1.remaining_pieces, player2.remaining_pieces
     p1_color, p2_color = player1.color, player2.color
-    for _, val in p1_pieces.items():
-        for unit_sq in val["rects"]:
-            pygame.draw.rect(canvas, p1_color, unit_sq)
-            unit_sq.x -= MARGIN
-            unit_sq.y -= MARGIN
-            pygame.draw.rect(canvas, constants.WHITE, unit_sq, MARGIN)
-            unit_sq.x += MARGIN
-            unit_sq.y += MARGIN
-    for _, val in p2_pieces.items():
-        for unit_sq in val["rects"]:
-            pygame.draw.rect(canvas, p2_color, unit_sq)
-            unit_sq.x -= MARGIN
-            unit_sq.y -= MARGIN
-            pygame.draw.rect(canvas, constants.WHITE, unit_sq, MARGIN)
-            unit_sq.x += MARGIN
-            unit_sq.y += MARGIN
+    for key, val in p1_pieces.items():
+        if not (key == selected and player1.number == active_player.number):
+            for unit_sq in val["rects"]:
+                pygame.draw.rect(canvas, p1_color, unit_sq)
+                unit_sq.x -= MARGIN
+                unit_sq.y -= MARGIN
+                pygame.draw.rect(canvas, constants.WHITE, unit_sq, MARGIN)
+                unit_sq.x += MARGIN
+                unit_sq.y += MARGIN
+    for key, val in p2_pieces.items():
+        if not (key == selected and player2.number == active_player.number):
+            for unit_sq in val["rects"]:
+                pygame.draw.rect(canvas, p2_color, unit_sq)
+                unit_sq.x -= MARGIN
+                unit_sq.y -= MARGIN
+                pygame.draw.rect(canvas, constants.WHITE, unit_sq, MARGIN)
+                unit_sq.x += MARGIN
+                unit_sq.y += MARGIN
 
-def draw_selected_piece(canvas, rect):
-    pass
+#Draws the selected current piece
+def draw_selected_piece(canvas, offset_list, mouse_pos, current_piece, player_color):
+    counter = 0
+    rects = current_piece["rects"]
+    ref_x, ref_y = rects[0].x, rects[0].y
+    for i in range(current_piece["arr"].shape[0]):
+        for j in range(current_piece["arr"].shape[1]):
+            if current_piece["arr"][i][j] == 1:
+                rects[counter].x = mouse_pos[0] + offset_list[counter][0] + (board_box_width - single_piece_width) * j - MARGIN
+                rects[counter].y = mouse_pos[1] + offset_list[counter][1] + (board_box_height - single_piece_height) * i - MARGIN
+                rects[counter].h = board_box_height + (2 * MARGIN)
+                rects[counter].w = board_box_width + (2 * MARGIN)
+                pygame.draw.rect(canvas, constants.WHITE, rects[counter], MARGIN)
+                rects[counter].x += MARGIN
+                rects[counter].y += MARGIN
+                rects[counter].h -= 2 * MARGIN
+                rects[counter].w -= 2 * MARGIN
+                pygame.draw.rect(canvas, player_color, rects[counter])
+                counter += 1
 
-def are_squares_within_board(current_piece):
-    for rect in current_piece["rects"]:
-        coords = get_square_under_mouse([rect.x, rect.y])
-        print(coords)
-        if not (coords[0] >= 0 and coords[1] >= 0):
+#Checks if all of the squares of the current selected piece lie within the board
+def are_squares_within_board(current_piece, board_rects):
+    is_within_board = False
+    for piece_rect in current_piece["rects"]:
+        for board_rect in board_rects:
+            if piece_rect.collidepoint(board_rect.centerx, board_rect.centery):
+                is_within_board = True
+        if not is_within_board:
             return False
+        else:
+            is_within_board = False
     return True
 
 def draw_infobox(canvas, player1, player2):

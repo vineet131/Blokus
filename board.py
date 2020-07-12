@@ -28,17 +28,16 @@ class Board:
                 pos = constants.STARTING_PTS["player2"]
             
             is_within_starting_pos = False
-            for i, x in zip(piece_x_rng, board_x_rng):
-                for j, y in zip(piece_y_rng, board_y_rng):
-                    if piece["arr"][i][j] == 1 and self.board[x][y] == empty:
-                        self.board[x][y] = player.number * piece["arr"][i][j]
+            for _, x in zip(piece_x_rng, board_x_rng):
+                for _, y in zip(piece_y_rng, board_y_rng):
                     if [x, y] == pos:
                         is_within_starting_pos = True
-            if not is_within_starting_pos:
+            if is_within_starting_pos:
                 for i, x in zip(piece_x_rng, board_x_rng):
                     for j, y in zip(piece_y_rng, board_y_rng):
-                        if piece["arr"][i][j] == 1:
-                            self.board[x][y] = empty
+                        if piece["arr"][i][j] == 1 and self.board[x][y] == empty:
+                            self.board[x][y] = player.number * piece["arr"][i][j]
+            else:
                 if constants.VERBOSITY > 0:
                     print("Could not fit piece in starting position in 1st move")
                 return False

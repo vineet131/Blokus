@@ -1,4 +1,4 @@
-import pieces, constants, board
+import pieces, constants, board, numpy as np
 
 class Player:
     
@@ -23,15 +23,15 @@ class Player:
     def update_score(self):
         self.score = board.scoring_fn(self.remaining_pieces)
     
-    def set_current_piece(self, piece_name):
-        self.current_piece = {"piece": piece_name, "arr": pieces.get_pieces()[piece_name]}
+    """def set_current_piece(self, piece_name):
+        self.current_piece = {"piece": piece_name, "arr": pieces.get_pieces()[piece_name]}"""
     
     def empty_current_piece(self):
-        self.current_piece = {"piece": "", "arr": [], "rotated": 0, "flipped": 0, "place_on_board_at": []}
+        self.current_piece = {"piece": "", "arr": [], "rotated": 0, "flipped": 0, "rects": [], "place_on_board_at": []}
     
     #We only rotate whatever is the current piece. We keep track of which rotated state its in
     def rotate_current_piece(self, clockwise = True):
-        max_rots = get_pieces()[self.current_piece["piece"]]["rots"]
+        max_rots = pieces.get_pieces()[self.current_piece["piece"]]["rots"]
         current_state = self.current_piece["rotated"]
     
         if clockwise:
@@ -51,7 +51,7 @@ class Player:
 
     #We only flip whatever is the current piece. We keep track of which flipped state its in
     def flip_current_piece(self):
-        if get_pieces()[self.current_piece["piece"]]["flips"] == 1:
+        if pieces.get_pieces()[self.current_piece["piece"]]["flips"] == 1:
             return self.current_piece["arr"]
         else:
             if self.current_piece["flipped"] == 1:
