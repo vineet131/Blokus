@@ -61,4 +61,6 @@ class Player:
             return np.flipud(self.current_piece["arr"])
 
 def switch_active_player(active_player, opponent):
+    if constants.VERBOSITY > 0:
+        print("Player number %d is now active" % opponent.number)
     return opponent, active_player

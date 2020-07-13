@@ -28,9 +28,9 @@ class Board:
                 pos = constants.STARTING_PTS["player2"]
             
             is_within_starting_pos = False
-            for _, x in zip(piece_x_rng, board_x_rng):
-                for _, y in zip(piece_y_rng, board_y_rng):
-                    if [x, y] == pos:
+            for i, x in zip(piece_x_rng, board_x_rng):
+                for j, y in zip(piece_y_rng, board_y_rng):
+                    if [x, y] == pos and piece["arr"][i][j] == 1:
                         is_within_starting_pos = True
             if is_within_starting_pos:
                 for i, x in zip(piece_x_rng, board_x_rng):
@@ -39,7 +39,8 @@ class Board:
                             self.board[x][y] = player.number * piece["arr"][i][j]
             else:
                 if constants.VERBOSITY > 0:
-                    print("Could not fit piece in starting position in 1st move")
+                    print("Piece %s placed at %s wasn't fit in the 1st turn" \
+                         % (piece["piece"], piece["place_on_board_at"]))
                 return False
             player.is_1st_move = False
         else:
@@ -50,17 +51,17 @@ class Board:
                             self.board[x][y] = player.number * piece["arr"][i][j]
             else:
                 if constants.VERBOSITY > 0:
-                    print("In fit_piece, move turned out to be invalid")
-                    print(piece)
+                    print("In fit_piece, a move with piece %s turned out to be invalid" % (piece))
                 return False
-        
+        if constants.VERBOSITY > 0:
+            print("Piece that was successfully fit:", player.current_piece)
         pieces.discard_piece(piece["piece"], player)
         player.empty_current_piece()
         self.turn_number += 1
         player.turn_number += 1
         player.update_score()
         if constants.VERBOSITY > 0:
-            print("At turn number", self.turn_number, "board is:", "\n", self.board)
+            print("After turn number", self.turn_number - 1, "board is:", "\n", self.board)
             print("Current player's score is:", player.score, "and opponent's score is", opponent_player.score)
         self.update_board_corners(player, opponent_player)
         return True
@@ -79,7 +80,7 @@ class Board:
             for x in range(self.board.shape[0]):
                 for y in range(self.board.shape[1]):
                     if self.board[x][y] == p.number:
-                        tl, tr, bl, br = self.check_surrounding_piece_coords(x, y)
+                        tl, tr, bl, br = self.check_surrounding_piece_coords(x, y, p.number)
                         if tl and x-1 >= 0 and y-1 >= 0:
                             p.board_corners["tl"].append([x-1, y-1])
                         if bl and x+1 < rows and y-1 >= 0:
@@ -92,32 +93,32 @@ class Board:
             print("Board corners for current player:", player.board_corners)
             print("Board corners for opponent player:", opponent_player.board_corners)
     
-    def check_surrounding_piece_coords(self, x, y):
+    def check_surrounding_piece_coords(self, x, y, p_num):
         tl, tr, bl, br = True, True, True, True
-        #Remember, for arrays, negative indexes are permissible, which we need to avoid
+        #Remember, for python arrays, negative indexes are permissible, which we need to avoid
         try:
-            if self.board[x+1][y] != empty: bl, br = False, False
+            if self.board[x+1][y] == p_num: bl, br = False, False
         except IndexError: bl, br = False, False
         try:
-            if self.board[x+1][y+1] != empty: br = False
+            if self.board[x+1][y+1] == p_num: br = False
         except IndexError: br = False
         try:
-            if self.board[x][y+1] != empty: tr, br = False, False
+            if self.board[x][y+1] == p_num: tr, br = False, False
         except IndexError: tr, br = False, False
         try:
-            if x-1 >= 0 and self.board[x-1][y+1] != empty: tr = False
+            if x-1 >= 0 and self.board[x-1][y+1] == p_num: tr = False
         except IndexError: tr = False
         try:
-            if x-1 >= 0 and self.board[x-1][y] != empty: tl, tr = False, False
+            if x-1 >= 0 and self.board[x-1][y] == p_num: tl, tr = False, False
         except IndexError: tl, tr = False, False
         try:
-            if x-1 >= 0 and y-1 >= 0 and self.board[x-1][y-1] != empty: tl = False
+            if x-1 >= 0 and y-1 >= 0 and self.board[x-1][y-1] == p_num: tl = False
         except IndexError: tl = False
         try:
-            if y-1 >= 0 and self.board[x][y-1] != empty: tl, bl = False, False
+            if y-1 >= 0 and self.board[x][y-1] == p_num: tl, bl = False, False
         except IndexError: tl, bl = False, False
         try:
-            if y-1 >= 0 and self.board[x+1][y-1] != empty: bl = False
+            if y-1 >= 0 and self.board[x+1][y-1] == p_num: bl = False
         except IndexError: bl = False
         return tl, tr, bl, br
     

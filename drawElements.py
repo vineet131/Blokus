@@ -25,8 +25,8 @@ def draw_title_window():
     pass
 
 def grid_to_array_coords(pos):
-    row = int((pos[0] - (piece_box_width + MARGIN)) // (MARGIN + board_box_width))
-    col = int((pos[1] - (info_box_height + MARGIN)) // (MARGIN + board_box_height))
+    col = int((pos[0] - (piece_box_width + MARGIN)) // (MARGIN + board_box_width))
+    row = int((pos[1] - (info_box_height + MARGIN)) // (MARGIN + board_box_height))
     return [row, col]
 
 def array_to_grid_coords():

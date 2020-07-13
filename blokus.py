@@ -50,10 +50,15 @@ class PygameClass:
                 #If a piece is selected, we see if we can place it on the board
                 if self.selected is not None:
                     if drawElements.are_squares_within_board(active_player.current_piece, self.board_rects):
-                        coords = [active_player.current_piece["rects"][0].centerx, active_player.current_piece["rects"][0].centery]
-                        active_player.current_piece["place_on_board_at"] = drawElements.grid_to_array_coords(coords)
+                        rect_coords = [active_player.current_piece["rects"][0].centerx, active_player.current_piece["rects"][0].centery]
+                        board_arr_coords = drawElements.grid_to_array_coords(rect_coords)
+                        #This part just adjusts the coordinates so that the array coordinate at [0,0] is chosen
+                        j = 0
+                        while not active_player.current_piece["arr"][0][j] == 1:
+                            j += 1
+                        board_arr_coords[1] -= j
+                        active_player.current_piece["place_on_board_at"] = board_arr_coords
                         if self.gameboard.fit_piece(active_player.current_piece, active_player, opponent):
-                            active_player.empty_current_piece()
                             self.selected = None
                             active_player, opponent = player.switch_active_player(active_player, opponent)
                     else:
@@ -111,7 +116,7 @@ def game_loop():
         #When human player's turn, listen for input
         if active_player.is_ai:
             if not active_player.is_1st_move:
-                pygame.time.wait(2000)
+                pygame.time.wait(20)
             AIManager.main(pgc.gameboard, active_player, opponent)
             active_player, opponent = player.switch_active_player(active_player, opponent)
         else:
