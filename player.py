@@ -40,25 +40,25 @@ class Player:
             else:
                 current_state += 1
             self.current_piece["rotated"] = current_state
-            return np.rot90(self.current_piece["arr"], k = 1)
+            self.current_piece["arr"] = np.rot90(self.current_piece["arr"], k = 1)
         else:
             if current_state == 0:
                 current_state = max_rots - 1
             else:
                 current_state -= 1
             self.current_piece["rotated"] = current_state
-            return np.rot90(self.current_piece["arr"], k = -1)
+            self.current_piece["arr"] = np.rot90(self.current_piece["arr"], k = -1)
+        if constants.VERBOSITY > 1:
+            print("New piece array for %s is %s" % (self.current_piece["piece"], self.current_piece["arr"]))
 
     #We only flip whatever is the current piece. We keep track of which flipped state its in
     def flip_current_piece(self):
-        if pieces.get_pieces()[self.current_piece["piece"]]["flips"] == 1:
-            return self.current_piece["arr"]
-        else:
+        if not pieces.get_pieces()[self.current_piece["piece"]]["flips"] == 1:
             if self.current_piece["flipped"] == 1:
                 self.current_piece["flipped"] = 0
             else:
                 self.current_piece["flipped"] += 1
-            return np.flipud(self.current_piece["arr"])
+            self.current_piece["arr"] = np.flipud(self.current_piece["arr"])
 
 def switch_active_player(active_player, opponent):
     if constants.VERBOSITY > 0:

@@ -45,7 +45,7 @@ class PygameClass:
                 self.game_over = True
                 IS_QUIT = True
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if constants.VERBOSITY > 0:
+                if constants.VERBOSITY > 1:
                     print("Mouse pos:", pygame.mouse.get_pos())
                 #If a piece is selected, we see if we can place it on the board
                 if self.selected is not None:
@@ -74,22 +74,22 @@ class PygameClass:
                 drawElements.init_piece_rects(self.player1.remaining_pieces, self.player2.remaining_pieces)
             elif event.type == pygame.KEYDOWN:
                 if self.selected is not None:
-                    key_controls(event, active_player)
+                    self.key_controls(event, active_player)
         return active_player, opponent
     
-def key_controls(event, active_player):
-    if event.key == pygame.K_LEFT:
-        #Rotate left
-        active_player.rotate_current_piece(False)
-    elif event.key == pygame.K_RIGHT:
-        #Rotate right
-        active_player.rotate_current_piece()
-    elif event.key == pygame.K_UP:
-        #Flip along main diagonal
-        pass
-    elif event.key == pygame.K_DOWN:
-        #Flip along other diagonal
-        pass
+    def key_controls(self, event, active_player):
+        if event.key == pygame.K_LEFT:
+            #Rotate left
+            active_player.rotate_current_piece()
+            self.offset_list = drawElements.draw_rotated_flipped_selected_piece(active_player.current_piece)
+        if event.key == pygame.K_RIGHT:
+            #Rotate right
+            active_player.rotate_current_piece(False)
+            self.offset_list = drawElements.draw_rotated_flipped_selected_piece(active_player.current_piece)
+        if event.key == pygame.K_UP:
+            #Flip along main diagonal
+            active_player.flip_current_piece()
+            self.offset_list = drawElements.draw_rotated_flipped_selected_piece(active_player.current_piece)
 
 def game_intro():
     intro = True
@@ -116,6 +116,7 @@ def game_loop():
         #When human player's turn, listen for input
         if active_player.is_ai:
             if not active_player.is_1st_move:
+                #This was for debugging purposes
                 pygame.time.wait(20)
             AIManager.main(pgc.gameboard, active_player, opponent)
             active_player, opponent = player.switch_active_player(active_player, opponent)
@@ -125,12 +126,11 @@ def game_loop():
         # Set the screen background
         pgc.background.fill(constants.BLACK)
         
-        drawElements.draw_infobox(pgc.background, active_player, opponent)
-        drawElements.draw_gameboard(pgc.background, pgc.board_rects, pgc.gameboard.board, active_player.current_piece)
+        drawElements.draw_infobox(pgc.background, pgc.player1, pgc.player2)
+        drawElements.draw_gameboard(pgc.background, pgc.board_rects, pgc.gameboard, active_player.current_piece, active_player)
         drawElements.draw_pieces(pgc.background, pgc.player1, pgc.player2, active_player, pgc.selected)
         if pgc.selected is not None:
             drawElements.draw_selected_piece(pgc.background, pgc.offset_list, pygame.mouse.get_pos(), active_player.current_piece, active_player.color)
-        
         pgc.screen.blit(pgc.background, (0,0))
         #print(drawElements.get_square_under_mouse(gameboard.board))
         

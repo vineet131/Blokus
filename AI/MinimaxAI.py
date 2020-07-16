@@ -9,13 +9,11 @@ def main(gameboard, ai_player, opponent_player):
         best_move = do_first_move(ai_player)
     else:
         for move in return_all_pending_moves(gameboard, ai_player):
-            board = copy.deepcopy(gameboard)
+            board_copy = copy.deepcopy(gameboard)
             ai_copy = copy.deepcopy(ai_player)
             opponent_copy = copy.deepcopy(opponent_player)
-
-            #copied_state = retain_board(board, ai_copy, opponent_copy)
-            if board.fit_piece(move, ai_copy, opponent_copy):
-                score = do_minimax(constants.INFINITY, constants.M_INFINITY, board, \
+            if board_copy.fit_piece(move, ai_copy, opponent_copy):
+                score = do_minimax(constants.INFINITY, constants.M_INFINITY, board_copy, \
                                    ai_copy, opponent_copy, False)
                 if score > best_score:
                     best_score = score
@@ -103,7 +101,7 @@ def get_min(alpha, beta, gameboard, ai_player, opponent_player, depth):
         ai_copy = copy.deepcopy(ai_player)
         opponent_copy = copy.deepcopy(opponent_player)
         if board_copy.fit_piece(move, opponent_copy, ai_copy):
-            eval = do_minimax(alpha, beta, gameboard, ai_copy, \
+            eval = do_minimax(alpha, beta, board_copy, ai_copy, \
                               opponent_copy, True, depth - 1)
             min_eval = min(min_eval, eval)
             beta = min(beta, eval)

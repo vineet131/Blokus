@@ -1,0 +1,6 @@
+- Rotation and flipping of pieces drifts
+- Sometimes when a piece is placed on the board near the edge of the board but the piece coordinates
+  exceed the board, the green margin lingers on the board
+- return_all_pending_moves() still missing out on some moves, likely due to check_is_move_valid()
+  but can't be sure so I must investigate
+- Selection of pieces could use some improvement (Area of selection is narrow)

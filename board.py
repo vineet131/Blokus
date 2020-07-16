@@ -53,16 +53,17 @@ class Board:
                 if constants.VERBOSITY > 0:
                     print("In fit_piece, a move with piece %s turned out to be invalid" % (piece))
                 return False
-        if constants.VERBOSITY > 0:
-            print("Piece that was successfully fit:", player.current_piece)
+        if constants.VERBOSITY > 0 and not player.is_ai:
+            print("Piece that was successfully fit:", piece)
         pieces.discard_piece(piece["piece"], player)
         player.empty_current_piece()
         self.turn_number += 1
         player.turn_number += 1
         player.update_score()
         if constants.VERBOSITY > 0:
-            print("After turn number", self.turn_number - 1, "board is:", "\n", self.board)
-            print("Current player's score is:", player.score, "and opponent's score is", opponent_player.score)
+            print("After turn number %s board is:\n %s" % (self.turn_number - 1,self.board))
+            print("Current player's (Player %s) score is: %s and opponent's (Player %s) score is: %s" % \
+                 (player.number, player.score, opponent_player.number, opponent_player.score))
         self.update_board_corners(player, opponent_player)
         return True
     
@@ -90,36 +91,36 @@ class Board:
                         if br and x+1 < rows and y+1 < cols:
                             p.board_corners["br"].append([x+1,y+1])
         if constants.VERBOSITY > 0:
-            print("Board corners for current player:", player.board_corners)
-            print("Board corners for opponent player:", opponent_player.board_corners)
+            print("Board corners for current player (Player %s): %s" % (player.number, player.board_corners))
+            print("Board corners for opponent player (Player %s): %s" % (opponent_player.number, opponent_player.board_corners))
     
     def check_surrounding_piece_coords(self, x, y, p_num):
         tl, tr, bl, br = True, True, True, True
         #Remember, for python arrays, negative indexes are permissible, which we need to avoid
         try:
-            if self.board[x+1][y] == p_num: bl, br = False, False
-        except IndexError: bl, br = False, False
+            if x-1 >= 0 and self.board[x-1][y+1] != empty: tr = False
+        except IndexError: tr = False
         try:
-            if self.board[x+1][y+1] == p_num: br = False
+            if self.board[x+1][y+1] != empty: br = False
         except IndexError: br = False
+        try:
+            if y-1 >= 0 and self.board[x+1][y-1] != empty: bl = False
+        except IndexError: bl = False
+        try:
+            if x-1 >= 0 and y-1 >= 0 and self.board[x-1][y-1] != empty: tl = False
+        except IndexError: tl = False
         try:
             if self.board[x][y+1] == p_num: tr, br = False, False
         except IndexError: tr, br = False, False
         try:
-            if x-1 >= 0 and self.board[x-1][y+1] == p_num: tr = False
-        except IndexError: tr = False
-        try:
-            if x-1 >= 0 and self.board[x-1][y] == p_num: tl, tr = False, False
-        except IndexError: tl, tr = False, False
-        try:
-            if x-1 >= 0 and y-1 >= 0 and self.board[x-1][y-1] == p_num: tl = False
-        except IndexError: tl = False
+            if self.board[x+1][y] == p_num: bl, br = False, False
+        except IndexError: bl, br = False, False
         try:
             if y-1 >= 0 and self.board[x][y-1] == p_num: tl, bl = False, False
         except IndexError: tl, bl = False, False
         try:
-            if y-1 >= 0 and self.board[x+1][y-1] == p_num: bl = False
-        except IndexError: bl = False
+            if x-1 >= 0 and self.board[x-1][y] == p_num: tl, tr = False, False
+        except IndexError: tl, tr = False, False
         return tl, tr, bl, br
     
     """Piece is the array of the piece being placed
@@ -245,16 +246,15 @@ def is_game_over(board, player1, player2):
 def scoring_fn(remaining_pieces):
     score = constants.STARTING_SCORE
     if len(remaining_pieces) == 0:
-        score = score + 15
+        score += 15
     else:
-        for key in remaining_pieces.keys():
-            piece = remaining_pieces[key]["arr"]
-            for i in range(piece.shape[0]):
-                for j in range(piece.shape[1]):
-                    if piece[i][j] == 1: #1 means 1 unit sq of that piece
-                        score = score - 1
+        for _, val in remaining_pieces.items():
+            for i in range(val["arr"].shape[0]):
+                for j in range(val["arr"].shape[1]):
+                    if val["arr"][i][j] == 1: #1 means 1 unit sq of that piece
+                        score -= 1
     # If the last pc played is the 1 unit sq pc, we get extra 5 pts
     if len(remaining_pieces) == 1 and "piece1" in remaining_pieces \
        and score == 88:
-        score = score + 5
+        score += 5
     return score
