@@ -13,6 +13,9 @@ class PygameClass:
         self.selected = None
         self.gameboard = Board()
         self.board_rects = drawElements.init_gameboard(self.gameboard.board)
+        self.error_msg_timeout_start = None
+        self.error_msg_timeout = 4000 #milliseconds
+
         self.player1, self.player2 = self.init_players(False, True, constants.PURPLE, constants.ORANGE, None, "RandomMovesBot")
         #self.player1, self.player2 = self.init_players(False, False, constants.PURPLE, constants.ORANGE, None, None)
         #self.player1, self.player2 = self.init_players(False, True, constants.PURPLE, constants.ORANGE, None, "MinimaxAI")
@@ -50,17 +53,24 @@ class PygameClass:
                 #If a piece is selected, we see if we can place it on the board
                 if self.selected is not None:
                     if drawElements.are_squares_within_board(active_player.current_piece, self.board_rects):
-                        rect_coords = [active_player.current_piece["rects"][0].centerx, active_player.current_piece["rects"][0].centery]
+                        rect_coords = [active_player.current_piece["rects"][0].centerx, \
+                                       active_player.current_piece["rects"][0].centery]
                         board_arr_coords = drawElements.grid_to_array_coords(rect_coords)
-                        #This part just adjusts the coordinates so that the array coordinate at [0,0] is chosen
+                        #This part just adjusts the coordinates so that the piece's array coordinate at [0,0] is chosen
                         j = 0
                         while not active_player.current_piece["arr"][0][j] == 1:
                             j += 1
                         board_arr_coords[1] -= j
                         active_player.current_piece["place_on_board_at"] = board_arr_coords
+                        ###End of code that adjusts the coordinates
+                        #Just fit the piece, the code written inside the method will handle the rest
                         if self.gameboard.fit_piece(active_player.current_piece, active_player, opponent):
                             self.selected = None
                             active_player, opponent = player.switch_active_player(active_player, opponent)
+                        #Display an error message if piece isn't fit
+                        else:
+                            self.display_err_msg_start()
+                    #Empty the selection if we click outide the board
                     else:
                         self.selected = None
                 #else we check if we need to pick up a piece
@@ -90,7 +100,15 @@ class PygameClass:
             #Flip along main diagonal
             active_player.flip_current_piece()
             self.offset_list = drawElements.draw_rotated_flipped_selected_piece(active_player.current_piece)
+    
+    def display_err_msg_start(self):
+        self.error_msg_timeout_start = pygame.time.get_ticks()
+    
+    def display_err_msg_end(self):
+        if pygame.time.get_ticks() - self.error_msg_timeout_start > self.error_msg_timeout:
+            self.error_msg_timeout_start = None
 
+#Game into screen code (Currently incomplete)
 def game_intro():
     intro = True
 
@@ -126,13 +144,18 @@ def game_loop():
         # Set the screen background
         pgc.background.fill(constants.BLACK)
         
+        #Draw the necessary components
         drawElements.draw_infobox(pgc.background, pgc.player1, pgc.player2)
-        drawElements.draw_gameboard(pgc.background, pgc.board_rects, pgc.gameboard, active_player.current_piece, active_player)
+        if pgc.error_msg_timeout_start is not None:
+            drawElements.draw_error_msg(pgc.background, pgc.player1, pgc.player2, "not_valid_move")
+            pgc.display_err_msg_end()
+        drawElements.draw_gameboard(pgc.background, pgc.board_rects, pgc.gameboard, \
+                                    active_player.current_piece, active_player)
         drawElements.draw_pieces(pgc.background, pgc.player1, pgc.player2, active_player, pgc.selected)
         if pgc.selected is not None:
-            drawElements.draw_selected_piece(pgc.background, pgc.offset_list, pygame.mouse.get_pos(), active_player.current_piece, active_player.color)
+            drawElements.draw_selected_piece(pgc.background, pgc.offset_list, pygame.mouse.get_pos(), \
+                                             active_player.current_piece, active_player.color)
         pgc.screen.blit(pgc.background, (0,0))
-        #print(drawElements.get_square_under_mouse(gameboard.board))
         
         # Limit to 60 frames per second
         pgc.clock.tick(60)

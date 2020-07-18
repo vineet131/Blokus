@@ -205,9 +205,8 @@ def draw_selected_piece(canvas, offset_list, mouse_pos, current_piece, player_co
                 counter += 1
 
 def draw_rotated_flipped_selected_piece(current_piece):
-    new_rects, offset_list = [], []
     ref_x, ref_y = current_piece["rects"][0].x, current_piece["rects"][0].y
-    current_piece["rects"] = []
+    current_piece["rects"], offset_list = [], []
     mouse_pos = pygame.mouse.get_pos()
     counter = 0
     for i in range(current_piece["arr"].shape[0]):
@@ -217,16 +216,12 @@ def draw_rotated_flipped_selected_piece(current_piece):
                 y = ref_y + ((board_box_height - single_piece_height) * i) - MARGIN
                 h = board_box_height
                 w = board_box_width
-                new_rects.append(pygame.Rect(x,y,h,w))
+                current_piece["rects"].append(pygame.Rect(x,y,h,w))
                 selected_offset_x = x - ((board_box_width/2) * j) - mouse_pos[0] - MARGIN
                 selected_offset_y = y - ((board_box_height/2) * i) - mouse_pos[1] - MARGIN
                 offset_list.append([selected_offset_x, selected_offset_y])
                 counter += 1
-    current_piece["rects"] = new_rects
     return offset_list
-
-def draw_flipped_selected_piece(canvas, current_piece):
-    pass
 
 #Checks if all of the squares of the current selected piece lie within the board
 def are_squares_within_board(current_piece, board_rects):
@@ -242,16 +237,36 @@ def are_squares_within_board(current_piece, board_rects):
     return True
 
 def draw_infobox(canvas, player1, player2):
-    font = pygame.font.SysFont("Trebuchet MS", 30)
-    text1 = font.render("Player 1 Score: "+str(player1.score), True, constants.WHITE)
-    text2 = font.render("Player 2 Score: "+str(player2.score), True, constants.WHITE)
-    pos1 = pygame.Rect((0, 0, piece_box_width, info_box_height))
-    pos2 = pygame.Rect((piece_box_width + board_width, 0, piece_box_width, info_box_height))
-    canvas.blit(text1, text1.get_rect(center = pos1.center))
-    canvas.blit(text2, text2.get_rect(center = pos2.center))
-    current_time = str(pygame.time.get_ticks() / 1000)
+    text_dict = {"p1_score" : "Player 1 Score: %s" % (player1.score),
+                 "p2_score" : "Player 2 Score: %s" % (player2.score),
+                 "title" : "Blokus on Pygame"}
     
-    text_center = font.render("Blokus on Pygame", False, constants.WHITE)
-    pos_center = pygame.Rect((0, 0, info_box_width, info_box_height))
-    #canvas.fill(constants.BLACK)
-    canvas.blit(text_center, text_center.get_rect(center = pos_center.center))
+    font = pygame.font.SysFont("Trebuchet MS", 30)
+
+    font_dict = {"p1_score" : font.render(text_dict["p1_score"], False, constants.WHITE),
+                 "p2_score" : font.render(text_dict["p2_score"], False, constants.WHITE),
+                 "title" : font.render(text_dict["title"], False, constants.WHITE)}
+    
+    pos_rect_dict = {"p1_score" : pygame.Rect((0, 0, piece_box_width, info_box_height)),
+                     "p2_score" : pygame.Rect((piece_box_width + board_width, 0, piece_box_width, info_box_height)),
+                     "title" : pygame.Rect((0, 0, info_box_width, info_box_height))}
+    
+    pos_dict = {"p1_score" : pos_rect_dict["p1_score"].center,
+                "p2_score" : pos_rect_dict["p2_score"].center, 
+                "title" : (pos_rect_dict["title"].midtop[0] + 13, pos_rect_dict["title"].midtop[1] + 13)}
+
+    for key, val in font_dict.items():
+        canvas.blit(val, val.get_rect(center = pos_dict[key]))
+
+def draw_error_msg(canvas, player1, player2, msg_key):
+    text_dict = {"not_valid_move" : "Invalid move. This piece cannot be placed there"}
+    
+    font = pygame.font.SysFont("Trebuchet MS", 25)
+
+    font_dict = {"not_valid_move" : font.render(text_dict["not_valid_move"], False, constants.ORANGE)}
+    
+    pos_rect_dict = {"not_valid_move" : pygame.Rect((0, 0, info_box_width, info_box_height))}
+    
+    pos_dict = {"not_valid_move" : pos_rect_dict["not_valid_move"].center}
+
+    canvas.blit(font_dict[msg_key], font_dict[msg_key].get_rect(center = pos_dict[msg_key]))
