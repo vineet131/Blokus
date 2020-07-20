@@ -10,7 +10,7 @@ def return_random_move(gameboard, player):
         if len(all_moves) > 0:
             chosen_move = random.choice(all_moves)
             if constants.VERBOSITY > 0:
-                print("Chosen move for RandomMovesBot:", chosen_move)
+                print("Chosen move for RandomMovesBot: %s" % (chosen_move))
             return chosen_move
     return None
 
@@ -19,8 +19,6 @@ def return_first_turn_move(player):
     #Lets not use the 1x1 piece in the beginning
     pieces.remove("piece1")
     piece = random.choice(pieces)
-    if constants.VERBOSITY > 0:
-        print("RandomMovesBot chooses piece: ", piece)
     
     piece_arr = player.remaining_pieces[piece]["arr"]
     
@@ -30,10 +28,7 @@ def return_first_turn_move(player):
     rots = player.remaining_pieces[piece]["rots"]
     rot = random.choice(range(rots))
 
-    if player.number == 1:
-        start_x, start_y = constants.STARTING_PTS["player1"]
-    elif player.number == 2:
-        start_x, start_y = constants.STARTING_PTS["player2"]
+    start_x, start_y = constants.STARTING_PTS["player%s" % (player.number)]
     
     piece_arr = np.rot90(piece_arr, k = rot)
     if flip == 1:
@@ -51,5 +46,5 @@ def return_first_turn_move(player):
     move = {"piece" : piece, "arr" : piece_arr, "rotated" : rot, "flipped" : flip, \
             "place_on_board_at" : [board_x, board_y]}
     if constants.VERBOSITY > 0:
-        print("Chosen first move for RandomMovesBot:", move)
+        print("Chosen first move for RandomMovesBot: %s" % (move))
     return move

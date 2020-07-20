@@ -18,7 +18,8 @@ BLACK = [0, 0, 0]
 WHITE = [255, 255, 255]
 GREEN = [0, 255, 0]
 PURPLE = [128, 0, 128]
-ORANGE = [255, 165, 0]
+ORANGE = [255, 169, 0]
+RED = [255, 60, 0]
 
 #The empty squares on the board shall be populated by this value
 BOARD_FILL_VALUE = 0

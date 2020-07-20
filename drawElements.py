@@ -258,15 +258,27 @@ def draw_infobox(canvas, player1, player2):
     for key, val in font_dict.items():
         canvas.blit(val, val.get_rect(center = pos_dict[key]))
 
-def draw_error_msg(canvas, player1, player2, msg_key):
-    text_dict = {"not_valid_move" : "Invalid move. This piece cannot be placed there"}
+def draw_infobox_msg(canvas, player1, player2, msg_key):
+    game_over_text = ""
+    if msg_key == "game_over":
+        if player1.score > player2.score:
+            game_over_text = "Game over. Player %s wins!" % (player1.number)
+        elif player1.score < player2.score:
+            game_over_text = "Game over. Player %s wins!" % (player2.number)
+        else:
+            game_over_text = "Game over. It's a tie!"
+    text_dict = {"not_valid_move" : "Invalid move. This piece cannot be placed there",
+                 "game_over" : game_over_text}
     
     font = pygame.font.SysFont("Trebuchet MS", 25)
 
-    font_dict = {"not_valid_move" : font.render(text_dict["not_valid_move"], False, constants.ORANGE)}
+    font_dict = {"not_valid_move" : font.render(text_dict["not_valid_move"], False, constants.RED),
+                 "game_over" : font.render(text_dict["game_over"], False, constants.GREEN)}
     
-    pos_rect_dict = {"not_valid_move" : pygame.Rect((0, 0, info_box_width, info_box_height))}
+    pos_rect_dict = {"not_valid_move" : pygame.Rect((0, 0, info_box_width, info_box_height)),
+                     "game_over" : pygame.Rect((0, 0, info_box_width, info_box_height))}
     
-    pos_dict = {"not_valid_move" : pos_rect_dict["not_valid_move"].center}
+    pos_dict = {"not_valid_move" : pos_rect_dict["not_valid_move"].center,
+                "game_over" : pos_rect_dict["game_over"].center}
 
     canvas.blit(font_dict[msg_key], font_dict[msg_key].get_rect(center = pos_dict[msg_key]))

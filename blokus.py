@@ -13,8 +13,9 @@ class PygameClass:
         self.selected = None
         self.gameboard = Board()
         self.board_rects = drawElements.init_gameboard(self.gameboard.board)
-        self.error_msg_timeout_start = None
-        self.error_msg_timeout = 4000 #milliseconds
+        self.infobox_msg_time_start = None
+        self.infobox_msg_timeout = 4000 #milliseconds
+        self.infobox_msg = ""
 
         self.player1, self.player2 = self.init_players(False, True, constants.PURPLE, constants.ORANGE, None, "RandomMovesBot")
         #self.player1, self.player2 = self.init_players(False, False, constants.PURPLE, constants.ORANGE, None, None)
@@ -47,7 +48,7 @@ class PygameClass:
             if event.type == pygame.QUIT:
                 self.game_over = True
                 IS_QUIT = True
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if constants.VERBOSITY > 1:
                     print("Mouse pos:", pygame.mouse.get_pos())
                 #If a piece is selected, we see if we can place it on the board
@@ -69,7 +70,7 @@ class PygameClass:
                             active_player, opponent = player.switch_active_player(active_player, opponent)
                         #Display an error message if piece isn't fit
                         else:
-                            self.display_err_msg_start()
+                            self.display_infobox_msg_start("not_valid_move")
                     #Empty the selection if we click outide the board
                     else:
                         self.selected = None
@@ -92,21 +93,22 @@ class PygameClass:
             #Rotate left
             active_player.rotate_current_piece()
             self.offset_list = drawElements.draw_rotated_flipped_selected_piece(active_player.current_piece)
-        if event.key == pygame.K_RIGHT:
+        elif event.key == pygame.K_RIGHT:
             #Rotate right
             active_player.rotate_current_piece(False)
             self.offset_list = drawElements.draw_rotated_flipped_selected_piece(active_player.current_piece)
-        if event.key == pygame.K_UP:
+        elif event.key == pygame.K_UP:
             #Flip along main diagonal
             active_player.flip_current_piece()
             self.offset_list = drawElements.draw_rotated_flipped_selected_piece(active_player.current_piece)
     
-    def display_err_msg_start(self):
-        self.error_msg_timeout_start = pygame.time.get_ticks()
+    def display_infobox_msg_start(self, msg_key):
+        self.infobox_msg_time_start = pygame.time.get_ticks()
+        self.infobox_msg = msg_key
     
-    def display_err_msg_end(self):
-        if pygame.time.get_ticks() - self.error_msg_timeout_start > self.error_msg_timeout:
-            self.error_msg_timeout_start = None
+    def display_infobox_msg_end(self):
+        if pygame.time.get_ticks() - self.infobox_msg_time_start > self.infobox_msg_timeout:
+            self.infobox_msg_time_start = None
 
 #Game into screen code (Currently incomplete)
 def game_intro():
@@ -146,15 +148,18 @@ def game_loop():
         
         #Draw the necessary components
         drawElements.draw_infobox(pgc.background, pgc.player1, pgc.player2)
-        if pgc.error_msg_timeout_start is not None:
-            drawElements.draw_error_msg(pgc.background, pgc.player1, pgc.player2, "not_valid_move")
-            pgc.display_err_msg_end()
+        if pgc.infobox_msg_time_start is not None:
+            drawElements.draw_infobox_msg(pgc.background, pgc.player1, pgc.player2, pgc.infobox_msg)
+            pgc.display_infobox_msg_end()
         drawElements.draw_gameboard(pgc.background, pgc.board_rects, pgc.gameboard, \
                                     active_player.current_piece, active_player)
         drawElements.draw_pieces(pgc.background, pgc.player1, pgc.player2, active_player, pgc.selected)
         if pgc.selected is not None:
             drawElements.draw_selected_piece(pgc.background, pgc.offset_list, pygame.mouse.get_pos(), \
                                              active_player.current_piece, active_player.color)
+        if board.is_game_over(pgc.gameboard, active_player, opponent):
+            #pgc.game_over = True
+            pgc.display_infobox_msg_start("game_over")
         pgc.screen.blit(pgc.background, (0,0))
         
         # Limit to 60 frames per second
@@ -162,9 +167,6 @@ def game_loop():
  
         # Update the screen with what is drawn.
         pygame.display.update()
-        
-        if board.is_game_over(pgc.gameboard, active_player, opponent):
-            pgc.game_over = True
 
 IS_QUIT = False
 

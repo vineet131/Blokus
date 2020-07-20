@@ -215,8 +215,8 @@ class Board:
     
     def validate_and_return_move_positions(self, piece_arr, player):
         place_on_board_at = []
-        for x in range(self.board.shape[0] - piece_arr.shape[0]):
-            for y in range(self.board.shape[1] - piece_arr.shape[1]):
+        for x in range(self.board.shape[0]):
+            for y in range(self.board.shape[1]):
                 if self.board[x][y] == empty:
                     if self.check_is_move_valid(piece_arr, player, [x,y]):
                         place_on_board_at.append([x,y])
@@ -269,7 +269,7 @@ def return_all_pending_moves(gameboard, player, mode = "ai"):
             #Even if a single move is present, the game ain't over yet
             if mode == "is_game_over" and len(pending_moves_list) > 0:
                 return pending_moves_list
-    if constants.VERBOSITY > 0:
+    if constants.VERBOSITY > 0 and len(pending_moves_list) > 0:
         msg = "Pending moves are: %s" % (pending_moves_list)
         print("Number of pending moves: %s" % (len(pending_moves_list)))
         #constants.write_to_log(msg)
