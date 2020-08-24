@@ -258,21 +258,37 @@ def get_corners_of_piece(piece_arr, i, j):
 def return_all_pending_moves(gameboard, player, mode = "ai"):
     pending_moves_list = []
 
-    #Iterate over that dictionary of remaining pieces
-    for current_piece in pieces.get_all_piece_states(player):
-        #Get the corners of 1 unit sq in current piece configuration
-        board_positions = gameboard.validate_and_return_move_positions(current_piece["arr"], player)
-        for pos in board_positions:
-            pending_moves_list.append({"piece": current_piece["piece"], "flipped": current_piece["flipped"],\
-                        "arr": current_piece["arr"], "rotated": current_piece["rotated"], "place_on_board_at": pos})
-            #If we just want to check if the game is over or not, we dont need to iterate every possibility.
-            #Even if a single move is present, the game ain't over yet
-            if mode == "is_game_over" and len(pending_moves_list) > 0:
-                return pending_moves_list
+    if player.is_1st_move:
+        #We need to place the pieces such that they're enclosed in starting pts
+        start_x, start_y = constants.STARTING_PTS["player%s" % (player.number)]
+        #Iterate over that dictionary of remaining pieces
+        for current_piece in pieces.get_all_piece_states(player):
+            for x in range(current_piece["arr"].shape[0]):
+                for y in range(current_piece["arr"].shape[1]):
+                    if current_piece["arr"][x][y] == 1:
+                        board_x = start_x - x
+                        board_y = start_y - y
+                        pending_moves_list.append({"piece": current_piece["piece"], \
+                            "flipped": current_piece["flipped"], "arr": current_piece["arr"], \
+                            "rotated": current_piece["rotated"], "place_on_board_at": [board_x, board_y]})
+    else:
+        #Iterate over that dictionary of remaining pieces
+        for current_piece in pieces.get_all_piece_states(player):
+            #Get the corners of 1 unit sq in current piece configuration
+            board_positions = gameboard.validate_and_return_move_positions(current_piece["arr"], player)
+            for pos in board_positions:
+                pending_moves_list.append({"piece": current_piece["piece"], "flipped": current_piece["flipped"],\
+                            "arr": current_piece["arr"], "rotated": current_piece["rotated"], "place_on_board_at": pos})
+                #If we just want to check if the game is over or not, we dont need to iterate every possibility.
+                #Even if a single move is present, the game ain't over yet
+                if mode == "is_game_over" and len(pending_moves_list) > 0:
+                    return pending_moves_list
     if constants.VERBOSITY > 0 and len(pending_moves_list) > 0:
         msg = "Pending moves are: %s" % (pending_moves_list)
         print("Number of pending moves: %s" % (len(pending_moves_list)))
         #constants.write_to_log(msg)
+    elif constants.VERBOSITY > 0 and len(pending_moves_list) == 0:
+        print("No more moves remain for player %s" % (player.number))
     return pending_moves_list
 
 def is_game_over(board, player1, player2):
@@ -305,3 +321,13 @@ def scoring_fn(remaining_pieces):
        and score == 88:
         score += 5
     return score
+
+#Just checks which player has the higher score at the time of calling function
+#If called at the end of play, it returns the winner
+def check_higher_score(player1, player2):
+    score1 = scoring_fn(player1.remaining_pieces)
+    score2 = scoring_fn(player2.remaining_pieces)
+
+    if score1 > score2: return player1
+    elif score2 > score1: return player2
+    else: return None #Draw

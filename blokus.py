@@ -6,8 +6,9 @@ from AI import AIManager
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (30,30)
 
 class PygameClass:
-    def __init__(self):
-        self.screen, self.background, self.piece_surface, self.clock = self.init_pygame()
+    def __init__(self, player_init_params = None, render = True):
+        if render:
+            self.screen, self.background, self.piece_surface, self.clock = self.init_pygame()
         self.offset_list = []
         self.game_over = False
         self.selected = None
@@ -17,11 +18,10 @@ class PygameClass:
         self.infobox_msg_timeout = 4000 #milliseconds
         self.infobox_msg = ""
 
-        self.player1, self.player2 = self.init_players(False, True, constants.PURPLE, constants.ORANGE, None, "RandomMovesBot")
-        #self.player1, self.player2 = self.init_players(False, False, constants.PURPLE, constants.ORANGE, None, None)
-        #self.player1, self.player2 = self.init_players(False, True, constants.PURPLE, constants.ORANGE, None, "MinimaxAI")
-        #self.player1, self.player2 = self.init_players(True, True, constants.PURPLE, constants.ORANGE, "RandomMovesBot", "MinimaxAI")
-        #self.player1, self.player2 = self.init_players(True, True, constants.PURPLE, constants.ORANGE, "RandomMovesBot", "RandomMovesBot")
+        if player_init_params is None:
+            player_init_params = {"p1" : {"is_ai" : False, "color" : constants.PURPLE, "name_if_ai" : None},
+                                  "p2" : {"is_ai" : True, "color" : constants.ORANGE, "name_if_ai" : "RandomMovesBot"}}
+        self.player1, self.player2 = self.init_players(player_init_params)
         
     def init_pygame(self):
         pygame.init()
@@ -36,11 +36,11 @@ class PygameClass:
         surface.blit(label, dims)"""
         return window, background, piece_surface, clock
     
-    def init_players(self, player1_is_ai, player2_is_ai,\
-                     player1_color, player2_color,\
-                     player1_name_if_ai, player2_name_if_ai):
-        player1 = player.Player(constants.PLAYER1_VALUE, player1_color, player1_is_ai, player1_name_if_ai)
-        player2 = player.Player(constants.PLAYER2_VALUE, player2_color, player2_is_ai, player2_name_if_ai)
+    def init_players(self, player_init_params):
+        player1 = player.Player(constants.PLAYER1_VALUE, player_init_params["p1"]["color"], \
+                                player_init_params["p1"]["is_ai"], player_init_params["p1"]["name_if_ai"])
+        player2 = player.Player(constants.PLAYER2_VALUE, player_init_params["p2"]["color"], \
+                                player_init_params["p2"]["is_ai"], player_init_params["p2"]["name_if_ai"])
         return player1, player2
     
     def event_handler(self, active_player, opponent):
@@ -168,9 +168,10 @@ def game_loop():
         # Update the screen with what is drawn.
         pygame.display.update()
 
-IS_QUIT = False
+if __name__ == "__main__":
+    IS_QUIT = False
 
-game_loop()
+    game_loop()
 
-if IS_QUIT:
-    pygame.quit()
+    if IS_QUIT:
+        pygame.quit()

@@ -1,90 +1,79 @@
-#Deep Q-Learning using Keras
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Activation, Flatten
-#from keras.callbacks import TensorBoard
-from keras.optimizers import Adam
-from collections import deque
-import numpy as np
+#TD Reinforcement Learning using Keras 2.3
+import copy, numpy as np
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+from RandomMovesBot.RandomMovesBot import return_random_move
+import pieces, constants, board
 
-#There are 21*2 pieces for both players, so maximum of 42 moves can be made
-#We randomly choose the last n moves made by both players leading upto the result
-REPLAY_MEMORY_SIZE = 42
+class TDN:
+    def __init__(self, state_shape, lr, epsilon, model_name):
+        #state_size = 196 (14x14 - size of the gameboard)
+        self.state_shape = state_shape
+        self.lr = lr
+        self.epsilon = epsilon
+        self.epsilon_decay = 0.00005
 
-class DQN:
-    def __init__(self, state_size):
         # Main model that we train at every step
         self.model = self.create_model()
-
-        # Target network that we predict at every step
-        self.target_model = self.create_model(state_size)
-        self.target_model.set_weights(self.model.get_weights())
-
-        # An array with last n steps for training
-        self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
-
-        # Custom tensorboard object
-        #self.tensorboard = ModifiedTensorBoard(log_dir="logs/{}-{}".format(MODEL_NAME, int(time.time())))
-
-        # Used to count when to update target network with main network's weights
-        self.target_update_counter = 0
-        
-        self.epsilon = 0.5
+        if model_name is not None:
+            print("Loading weights")
+            self.load_model(model_name)
     
-    def create_model(self, state_size):
-        #model = Sequential()
-        #model.add(Conv2D(256, (3, 3), input_shape=state_size)) #state_size=196x1 for the 14x14 gameboard
-        
-        #Toy resnet model
-        inputs = keras.Input(shape=state_size, name="img")
-        x = layers.Conv2D(32, 3, activation="relu")(inputs)
-        x = layers.Conv2D(64, 3, activation="relu")(x)
-        block_1_output = layers.MaxPooling2D(3)(x)
+    """
+    Simple convolutional fully connected network. Takes the board array as input
+    and an action with maximum value spit out by the network is selected as output.
+    """
+    def create_model(self):
+        #Input size = 196 (14x14 - size of the gameboard)
+        model_input = keras.Input(shape=self.state_shape, name="board_input")
 
-        x = layers.Conv2D(64, 3, activation="relu", padding="same")(block_1_output)
-        x = layers.Conv2D(64, 3, activation="relu", padding="same")(x)
-        block_2_output = layers.add([x, block_1_output])
+        layer_1 = layers.Dense(128, activation="sigmoid")(model_input)
+        layer_2 = layers.Dense(64, activation="sigmoid")(layer_1)
+        layer_3 = layers.Dense(50, activation="sigmoid")(layer_2)
 
-        x = layers.Conv2D(64, 3, activation="relu", padding="same")(block_2_output)
-        x = layers.Conv2D(64, 3, activation="relu", padding="same")(x)
-        block_3_output = layers.add([x, block_2_output])
+        #model_output gives the evaluated value of the inputted board state
+        model_output = layers.Dense(1, activation="sigmoid")(layer_3)
 
-        x = layers.Conv2D(64, 3, activation="relu")(block_3_output)
-        x = layers.GlobalAveragePooling2D()(x)
-        x = layers.Dense(256, activation="relu")(x)
-        x = layers.Dropout(0.5)(x)
-        #Linear activation for direct correlation between state space and action space
-        output1 = layers.Dense(action_size_1, activation="linear")(x)
-        output2 = layers.Dense(action_size_2, activation="linear")(x)
-
-        model = keras.Model(inputs, [output1, output2], name="toy_resnet")
-        model.compile(loss="mse", optimizer=Adam(lr=0.001), metrics=['accuracy'])
+        model = keras.Model(model_input, model_output, name="simple_convolution")
+        model.compile(loss="mse", optimizer=keras.optimizers.Adam(self.lr), metrics=['accuracy'])
+        if constants.VERBOSITY > 1:
+            print("Created the model:\n", model.summary())
         return model
     
-    def train_model(self):
-        self.model.fit(np.array(X)/255, np.array(y), batch_size=MINIBATCH_SIZE, verbose=0, shuffle=False, callbacks=[self.tensorboard] if terminal_state else None)
+    def train_model(self, state, V):
+        self.model.fit([[state.flatten()]], V, epochs=1)
+
+    def predict_model(self, state):
+        return self.model.predict([[state.flatten()]])
     
-    def remember(self, state, action, reward, next_state, done = False):
-        self.replay_memory.append((state, action, reward, next_state, done))
+    def get_weights(self):
+        return self.model.trainable_weights
     
-    def explore_or_exploit(self, state):
-        if np.random.rand() <= self.epsilon:
-            return None
-        piece, place_on_board_at = self.model.predict(state)
-        return [np.argmax(piece), np.argmax(place_on_board_at)]
+    def get_gradients(self):
+        return self.model.optimizer.get_gradients(self.model.total_loss, self.get_weights())
     
-    def replay(self, batch_size):
-        minibatch = self.replay_memory[np.random.randint(batch_size):]
-        for state, action, reward, next_state, done in minibatch:
-            target = reward
-            if not done:
-                target = reward + GAMMA * np.amax(self.model.predict(next_state)[0])
-            target_future = self.model.predict(state)
-            target_future[0][action] = target
-            
-            self.model.fit(state, target_future, epochs=1, verbose=0)
-        
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
+    def explore_or_exploit(self, gameboard, player, opponent_player):
+        chosen_move = None
+        random_number = np.random.random()
+        if random_number <= self.epsilon:
+            self.epsilon -= self.epsilon_decay
+            chosen_move = return_random_move(gameboard, player)
+            if constants.VERBOSITY > 1: print("Epsilon value is now", self.epsilon)
+            if constants.VERBOSITY > 0: print("Chose to explore")
+        else:
+            best_score = constants.M_INFINITY
+            for move in board.return_all_pending_moves(gameboard, player):
+                board_copy = copy.deepcopy(gameboard)
+                player_copy = copy.deepcopy(player)
+                opponent_copy = copy.deepcopy(opponent_player)
+                if board_copy.fit_piece(move, player_copy, opponent_copy):
+                    score = self.predict_model(board_copy.board)
+                    if score > best_score:
+                        best_score = score
+                        chosen_move = move
+            if constants.VERBOSITY > 0: print("Chose to exploit")
+        return chosen_move
     
     def save_model(self, name):
         self.model.save_weights(name)

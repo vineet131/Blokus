@@ -22,8 +22,8 @@ def main(gameboard, ai_player, opponent_player):
     #######################################################################
     if best_move != None:
         if not gameboard.fit_piece(best_move, ai_player, opponent_player):
-            print("For player",ai_player.ai_name,"with number",ai_player.number,\
-                "The following move has failed:", move)
-            print("The state of the gameboard is:", gameboard.board)
+            print("For player %s with number %s, the following move has failed:\n" \
+                  % (ai_player.ai_name, ai_player.number, move))
+            print("The state of the gameboard is: \n%s" % gameboard.board)
             raise Exception("AI piece was not fit")
         return best_move
