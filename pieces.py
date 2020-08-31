@@ -48,9 +48,3 @@ def get_all_piece_states(player = None):
                     current_piece = np.rot90(current_piece, k = 1)
                 list_pieces.append({"piece": piece, "arr": current_piece, "flipped": flip, "rotated": rot})
     return list_pieces
-
-def discard_piece(piece_name, player):
-    #Delete from dictionary of current pieces
-    del player.remaining_pieces[piece_name]
-    #Append to dictionary containing discarded pieces
-    player.discarded_pieces[piece_name] = get_pieces()[piece_name]

@@ -15,7 +15,7 @@ class Board:
     #For human player: We pass the player.current_piece as the piece parameter
     #For AI: We pass one move from the dict returned by return_all_pending_moves()
     #        or a dict in a similar format as the piece parameter
-    def fit_piece(self, piece, player, opponent_player):
+    def fit_piece(self, piece, player, opponent_player, mode="player"):
         piece_x_rng = range(piece["arr"].shape[0])
         piece_y_rng = range(piece["arr"].shape[1])
         board_x_rng = range(piece["place_on_board_at"][0], rows)
@@ -42,7 +42,10 @@ class Board:
                     print("Piece %s placed at %s wasn't fit in the 1st turn" \
                          % (piece["piece"], piece["place_on_board_at"]))
                 return False
-            player.is_1st_move = False
+            #When an AI like Minimax iterates through all possible moves,send mode="ai"
+            #to avoid this parameter being set to False
+            if mode=="player":
+                player.is_1st_move = False
         else:
             if self.check_is_move_valid(piece["arr"], player, piece["place_on_board_at"]):
                 for i, x in zip(piece_x_rng, board_x_rng):
@@ -55,7 +58,7 @@ class Board:
                 return False
         if constants.VERBOSITY > 0 and not player.is_ai:
             print("Piece that was successfully fit:", piece)
-        pieces.discard_piece(piece["piece"], player)
+        player.discard_piece(piece)
         player.empty_current_piece()
         self.turn_number += 1
         player.turn_number += 1
@@ -67,6 +70,25 @@ class Board:
         #self.update_board_corners(player, opponent_player)
         self.optimised_update_board_corners(piece, player, opponent_player)
         return True
+    
+    def unfit_last_piece(self, player, opponent_player):
+        piece = player.retrieve_last_piece()
+
+        piece_x_rng = range(piece["arr"].shape[0])
+        piece_y_rng = range(piece["arr"].shape[1])
+        board_x_rng = range(piece["place_on_board_at"][0], rows)
+        board_y_rng = range(piece["place_on_board_at"][1], cols)
+
+        for i, x in zip(piece_x_rng, board_x_rng):
+            for j, y in zip(piece_y_rng, board_y_rng):
+                if piece["arr"][i][j] == 1:
+                    self.board[x][y] = empty
+        self.turn_number -= 1
+        player.turn_number -= 1
+        player.update_score()
+        self.update_board_corners(player, opponent_player)
+        if constants.VERBOSITY > 1:
+            print("Piece %s has been removed from the board" % (piece["piece_name"]))
     
     """We check the corners of a certain coordinate on the board as such:
     tl   0   tr

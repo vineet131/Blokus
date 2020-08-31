@@ -19,8 +19,10 @@ class PygameClass:
         self.infobox_msg = ""
 
         if player_init_params is None:
-            player_init_params = {"p1" : {"is_ai" : False, "color" : constants.PURPLE, "name_if_ai" : None},
-                                  "p2" : {"is_ai" : True, "color" : constants.ORANGE, "name_if_ai" : "RandomMovesBot"}}
+            player_init_params = {"p1" : {"is_ai" : False, "color" : constants.PURPLE, "name_if_ai" : None,
+                                          "ai_class" : None},
+                                  "p2" : {"is_ai" : True, "color" : constants.ORANGE, "name_if_ai" : "RandomMovesBot",
+                                          "ai_class" : None}}
         self.player1, self.player2 = self.init_players(player_init_params)
         
     def init_pygame(self):
@@ -38,9 +40,11 @@ class PygameClass:
     
     def init_players(self, player_init_params):
         player1 = player.Player(constants.PLAYER1_VALUE, player_init_params["p1"]["color"], \
-                                player_init_params["p1"]["is_ai"], player_init_params["p1"]["name_if_ai"])
+                                player_init_params["p1"]["is_ai"], player_init_params["p1"]["name_if_ai"],
+                                player_init_params["p1"]["ai_class"])
         player2 = player.Player(constants.PLAYER2_VALUE, player_init_params["p2"]["color"], \
-                                player_init_params["p2"]["is_ai"], player_init_params["p2"]["name_if_ai"])
+                                player_init_params["p2"]["is_ai"], player_init_params["p2"]["name_if_ai"],
+                                player_init_params["p2"]["ai_class"])
         return player1, player2
     
     def event_handler(self, active_player, opponent):
@@ -126,7 +130,12 @@ def game_intro():
 
 #The main game loop
 def game_loop():
-    pgc = PygameClass()
+    from AI.ReinforcementLearningModelKeras import TDN
+    player_init_params = {"p1" : {"is_ai" : False, "color" : constants.PURPLE, "name_if_ai" : None,
+                                  "ai_class": None},
+                          "p2" : {"is_ai" : True, "color" : constants.ORANGE, "name_if_ai" : "ReinforcementLearningAI",
+                                  "ai_class": TDN()}}
+    pgc = PygameClass(player_init_params)
     active_player, opponent = pgc.player1, pgc.player2
     drawElements.init_piece_rects(pgc.player1.remaining_pieces, pgc.player2.remaining_pieces)
     

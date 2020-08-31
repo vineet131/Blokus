@@ -1,11 +1,12 @@
-from AI import ReinforcementLearningModelKeras as rlmk
+from AI.ReinforcementLearningModelKeras import TDN
 from blokus import PygameClass
 import constants, board, pieces, player, drawElements
 import os, copy, numpy as np, tensorflow as tf, matplotlib.pyplot as plt
 from tqdm import tqdm
+plt.style.use('dark_background')
 
-N_EPISODES = 1#2000
-RENDER_EVERY = 400
+N_EPISODES = 2000
+RENDER_EVERY = N_EPISODES + 1 #Needs some investigation
 
 """if not os.path.exists('models'):
     os.makedirs('models')
@@ -13,9 +14,10 @@ MODEL_SAVE_FOLDER = os.getcwd()
 MODEL_SAVE_FILE = os.path('models')"""
 
 def simulation_loop(player_init_params, lr=0.001, epsilon=1, model_name=None):
-    pgc = PygameClass(player_init_params, False)
-    tdnet = rlmk.TDN(pgc.gameboard.board.flatten().shape, lr, epsilon, model_name)
-    winner_list = []
+    #pgc = PygameClass(player_init_params, False)
+    tdnet = TDN(lr, epsilon, model_name)
+    winner_list = {"1": 0, "2": 0, "Tie": 0}
+    losses = []
 
     for ep in tqdm(range(N_EPISODES), ascii=True, unit="Episodes"):
         game_over = False
@@ -23,8 +25,7 @@ def simulation_loop(player_init_params, lr=0.001, epsilon=1, model_name=None):
         if ep % RENDER_EVERY == 0 and ep != 0:
             is_render = True
     
-        if not ep == 0:
-            pgc = PygameClass(player_init_params, is_render)
+        pgc = PygameClass(player_init_params, is_render)
         #initialise e (trace) and other parameters
         trace = 0
         reward = 0
@@ -37,6 +38,9 @@ def simulation_loop(player_init_params, lr=0.001, epsilon=1, model_name=None):
         # Made the redundant passing to player1 & player2 first
         # and then to active_player & opponent for clarity/legibility
         active_player, opponent = pgc.player1, pgc.player2
+        if is_render:
+            drawElements.init_piece_rects(pgc.player1.remaining_pieces,\
+                                          pgc.player2.remaining_pieces)
         while not game_over:
             #Get action to be taken either randomly or based on policy
             current_move = tdnet.explore_or_exploit(pgc.gameboard, active_player, opponent)
@@ -55,20 +59,20 @@ def simulation_loop(player_init_params, lr=0.001, epsilon=1, model_name=None):
                 game_over = True
                 winner = board.check_higher_score(pgc.player1, pgc.player2)
                 #We assign the rule that if player 1 wins, we push the V function
-                #closer to 1 and if player 2 wins we push it closer to 0
-                if winner == pgc.player1: V_next = 1
-                elif winner == pgc.player2: V_next = 0
-                else: V_next = 0.5 #In case of a draw
+                #closer to 0 and if player 2 wins we push it closer to 1
+                if winner == pgc.player1:   V_next = 0
+                elif winner == pgc.player2: V_next = 1
+                else:                       V_next = 0.5 #In case of a draw
             else:
                 #Calculate V_next to be inputted into delta
                 V_next = tdnet.predict_model(new_state)
 
             #Find delta (the Temporal Difference error)
             delta = tf.reduce_sum(V_next - V)
-        
+
             #Update the vector of eligibility traces
-            tvars = tdnet.get_weights()
-            grads = tdnet.get_gradients()
+            trainable_vars = tdnet.get_weights()
+            grads = tdnet.get_gradients(current_state, V, trainable_vars)
 
             updated_traces = []
             for grad in grads:
@@ -82,21 +86,18 @@ def simulation_loop(player_init_params, lr=0.001, epsilon=1, model_name=None):
                 updated_traces.append(grad_trace)
 
             #Update the parameter vector theta_t+1 <- theta_t + (alpha * delta_t * trace_t)
-            tdnet.model.optimizer.apply_gradients(zip(updated_traces, tvars))
+            tdnet.model.optimizer.apply_gradients(zip(updated_traces, trainable_vars))
+            #tdnet.model.compiled_metrics.update_state(y, y_pred)
             #tdnet.train_model(next_state, V_next)
-        
+
             active_player, opponent = player.switch_active_player(active_player, opponent)
             if is_render:
-                if active_player.number == 1:
-                    p1_rects, p2_rects = drawElements.init_piece_rects(pgc.background, active_player, opponent)
-                elif active_player.number == 2:
-                    p1_rects, p2_rects = drawElements.init_piece_rects(pgc.background, opponent, active_player)
                 # Set the screen background
                 pgc.screen.fill(constants.BLACK)
         
-                drawElements.draw_infobox(pgc.background, active_player, opponent)
-                drawElements.draw_pieces(pgc.background, p1_rects, p2_rects, player1.color, player2.color)
-                drawElements.draw_gameboard(pgc.background, gameboard.board)
+                drawElements.draw_infobox(pgc.background, pgc.player1, pgc.player2)
+                drawElements.draw_pieces(pgc.background, pgc.player1, pgc.player2, active_player, pgc.selected)
+                drawElements.draw_gameboard(pgc.background, pgc.board_rects, pgc.gameboard, None, active_player)
                 pgc.screen.blit(pgc.background, (0,0))
         
                 # Limit to 60 frames per second
@@ -104,20 +105,39 @@ def simulation_loop(player_init_params, lr=0.001, epsilon=1, model_name=None):
  
                 # Update the screen with what is drawn.
                 pygame.display.update()
+        history = tdnet.train_model(new_state, V_next)
         pgc = None
-        winner_list.append(str(winner.number) if winner is not None else "Tie")
-    #plt.plot([[x, winner_list.count(x)] for x in set(winner_list)])
-    #plt.show()
-    tdnet.save_model("test.pb")
+        if winner is not None:
+            winner_list[str(winner.number)] +=1
+        else:
+            winner_list["Tie"] += 1
+        losses.append(history.history["loss"][0])
+    plt.figure()
+    plt.subplot(1,2,1)
+    plt.xlabel("Winner")
+    plt.ylabel("Number of wins")
+    plt.title("Wins vs no of episodes")
+    plt.bar(winner_list.keys(), winner_list.values())
+    plt.subplot(1,2,2)
+    plt.xlabel("Episode #")
+    plt.ylabel("Loss")
+    plt.title("Loss vs episodes")
+    plt.plot(losses, marker='o')
+    plt.savefig("winner_vs_wins__losses_per_episode.png")
+    tdnet.save_model(model_name)
 
 def train():
-    player_init_params = {"p1" : {"is_ai" : True, "color" : constants.PURPLE, "name_if_ai" : "RandomMovesBot"},
-                          "p2" : {"is_ai" : True, "color" : constants.ORANGE, "name_if_ai" : "RandomMovesBot"}}
-    simulation_loop(player_init_params, model_name="test.pb")
+    player_init_params = {"p1" : {"is_ai" : True, "color" : constants.PURPLE, "name_if_ai" : "RandomMovesBot",
+                                  "ai_class": None},
+                          "p2" : {"is_ai" : True, "color" : constants.ORANGE, "name_if_ai" : "RandomMovesBot",
+                                  "ai_class": None}}
+    simulation_loop(player_init_params, model_name="test.pb", epsilon=0.99)
 
 def test():
-    player_init_params = {"p1" : {"is_ai" : True, "color" : constants.PURPLE, "name_if_ai" : "RandomMovesBot"},
-                          "p2" : {"is_ai" : True, "color" : constants.ORANGE, "name_if_ai" : "RandomMovesBot"}}
+    player_init_params = {"p1" : {"is_ai" : True, "color" : constants.PURPLE, "name_if_ai" : "RandomMovesBot",
+                                  "ai_class": None},
+                          "p2" : {"is_ai" : True, "color" : constants.ORANGE, "name_if_ai" : "RandomMovesBot",
+                                  "ai_class": None}}
     simulation_loop(player_init_params, epsilon=0.1)
 
 if __name__ == "__main__":

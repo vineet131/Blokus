@@ -4,10 +4,10 @@ class Player:
     
     players = [constants.PLAYER1_VALUE, constants.PLAYER2_VALUE]
     
-    def __init__(self, player_number: int, color: list, is_ai: bool, ai_name = None):
+    def __init__(self, player_number: int, color: list, is_ai: bool, ai_name = None, ai_class = None):
         self.number = player_number
         self.remaining_pieces = pieces.get_pieces()
-        self.discarded_pieces = {}
+        self.discarded_pieces = []
         self.current_piece = {"piece": "", "arr": [], "rotated": 0, "flipped": 0, "rects": [], "place_on_board_at": []}
         self.color = color
         self.score = board.scoring_fn(self.remaining_pieces)
@@ -19,6 +19,8 @@ class Player:
         #Used for AIs
         self.is_ai = is_ai
         self.ai_name = ai_name
+        #To initialise things like a class containing a TF model
+        self.ai_class = ai_class
 
     def update_score(self):
         self.score = board.scoring_fn(self.remaining_pieces)
@@ -59,6 +61,17 @@ class Player:
             else:
                 self.current_piece["flipped"] += 1
             self.current_piece["arr"] = np.flipud(self.current_piece["arr"])
+    
+    def discard_piece(self, piece):
+        #Delete from dictionary of current pieces
+        del self.remaining_pieces[piece["piece"]]
+        #Append to dictionary containing discarded pieces
+        self.discarded_pieces.append(piece)
+    
+    def retrieve_last_piece(self):
+        piece = self.discarded_pieces[-1]
+        self.remaining_pieces[piece["piece"]] = pieces.get_pieces()[piece["piece"]]
+        return piece
 
 def switch_active_player(active_player, opponent):
     if constants.VERBOSITY > 0:
