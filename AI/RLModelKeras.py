@@ -41,24 +41,30 @@ class TDN:
         self.model = self.create_model()
         self.model_checkpoint_callback = None
         if model_name is not None:
-            print("Loading weights")
-            self.load_model(model_name)
-            self.model_checkpoint_callback = keras.callbacks.ModelCheckpoint(model_name)
+            try:
+                self.load_model_weights(model_name)
+                print("Loaded model weights")
+                self.model_checkpoint_callback = keras.callbacks.ModelCheckpoint(model_name)
+            except:
+                print("Model name exists but couldn't find model in the folder. Using initial random weights")
     
     """
     Simple convolutional fully connected network. Takes the board array as input
     and an action with maximum value spit out by the network is selected as output.
     """
     def create_model(self):
-        #Input size = 196 (14x14 - size of the gameboard)
-        model_input = keras.Input(shape=self.state_shape, name="board_input")
+        #Input explanation:
+        #-392 units (196 for black and 196 for white) representing binarily whether player's piece is present at that board position
+        #-2 units for the score of each side
+        #-2 units for a binray representation of whose turn it is
+        #Total - 396 input units
+        model_input = keras.Input(shape=(396,), name="board_input")
 
-        layer_1 = layers.Dense(128, activation="sigmoid")(model_input)
-        layer_2 = layers.Dense(100, activation="sigmoid")(layer_1)
-        layer_3 = layers.Dense(50, activation="sigmoid")(layer_2)
+        layer_1 = layers.Dense(256, activation="sigmoid")(model_input)
+        layer_2 = layers.Dense(75, activation="sigmoid")(layer_1)
 
         #model_output gives the evaluated value of the inputted board state
-        model_output = layers.Dense(1, activation="sigmoid")(layer_3)
+        model_output = layers.Dense(1, activation="sigmoid")(layer_2)
 
         #model = CustomModel(model_input, model_output, name="simple_convolution")
         model = keras.Model(model_input, model_output, name="simple_convolution")
@@ -67,25 +73,64 @@ class TDN:
             print("Created the model:\n%s" % (model.summary()))
         return model
     
-    def train_model(self, state, V):
-        state = np.reshape(state, (1,196))
-        V = np.array([[V]])
-        if self.model_checkpoint_callback is not None:
-            return self.model.fit(state, V, epochs=1, callbacks=[self.model_checkpoint_callback])
+    def generate_model_input(self, state, score_p1, score_p2, current_turn):
+        final_arr = []
+        p1 = np.where(state == 1, 1, 0)
+        p2 = np.where(state == 2, 1, 0)
+        if current_turn == 1:
+            turn_arr = np.array([1, 0])
         else:
-            return self.model.fit(state, V, epochs=1)
+            turn_arr = np.array([0, 1])
+            temp = p1
+            p1 = p2
+            p2 = temp
+        for element in [[score_p1/88, score_p2/88], turn_arr, p1.flatten(), p2.flatten()]:
+            final_arr.extend(element)
+        return np.reshape(final_arr, (1,396))
+    
+    def train_model(self, state, V, score_p1, score_p2, current_turn):
+        final_arr = self.generate_model_input(state, score_p1, score_p2, current_turn)
+        V = np.array([[V]])
+        
+        if self.model_checkpoint_callback is not None:
+            return self.model.fit(final_arr, V, epochs=1, batch_size=None, callbacks=[self.model_checkpoint_callback])
+        else:
+            return self.model.fit(final_arr, V, epochs=1, batch_size=None)
 
-    def predict_model(self, state):
-        return self.model.predict(np.reshape(state, (1,196)))
+    def predict_model(self, state, score_p1, score_p2, current_turn):
+        final_arr = self.generate_model_input(state, score_p1, score_p2, current_turn)
+        return self.model.predict(final_arr)
     
     def get_weights(self):
         return self.model.trainable_weights
     
-    def get_gradients(self, state, V, trainable_vars):
+    def get_gradients(self, state, score_p1, score_p2, current_turn, V):
+        trainable_vars = self.get_weights()
+        final_arr = self.generate_model_input(state, score_p1, score_p2, current_turn)
         with tf.GradientTape() as tape:
-            V_pred = self.model(np.reshape(state, (1, 196)), training=True)
+            V_pred = self.model(final_arr, training=True)
             loss_value = self.loss_fn(V, V_pred)
-        return tape.gradient(loss_value, trainable_vars)
+            #loss_value += sum(self.model.losses)
+        return tape.gradient(loss_value, trainable_vars), loss_value, V_pred
+    
+    def get_temporal_difference(self, V_next, V, grads, model_lambda, alpha):
+        trainable_vars = self.get_weights()
+        #Find delta (the Temporal Difference error)
+        delta = tf.reduce_sum(V_next - V)
+
+        updated_traces = []
+        for grad in grads:
+            trace = tf.Variable(tf.zeros(grad.get_shape()), trainable=False)
+            #Eligibility trace decayed by lambda: e_t = lambda * e_t-1 + dV_t/dTheta_t
+            trace_op = ((model_lambda * trace) + grad)
+
+            # grad with trace theta_t+1 - theta_t = alpha * delta_t * e_t
+            grad_trace = alpha * delta * trace_op
+
+            updated_traces.append(grad_trace)
+
+        #Update the parameter vector theta_t+1 <- theta_t + (alpha * delta_t * trace_t)
+        self.model.optimizer.apply_gradients(zip(updated_traces, trainable_vars))
     
     def explore_or_exploit(self, gameboard, player, opponent_player):
         chosen_move = None
@@ -101,7 +146,7 @@ class TDN:
             constants.VERBOSITY = 0
             for move in board.return_all_pending_moves(gameboard, player):
                 if gameboard.fit_piece(move, player, opponent_player, mode="ai"):
-                    score = self.predict_model(gameboard.board)
+                    score = self.predict_model(gameboard.board, player.score, opponent_player.score, player.number)
                     if score > best_score:
                         best_score = score
                         chosen_move = move
@@ -110,8 +155,8 @@ class TDN:
             if constants.VERBOSITY > 0: print("Chose to exploit")
         return chosen_move
     
-    def save_model(self, name):
+    def save_model_weights(self, name):
         self.model.save_weights(name)
     
-    def load_model(self, name):
+    def load_model_weights(self, name):
         self.model.load_weights(name)

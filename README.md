@@ -1,7 +1,7 @@
 # Blokus (Development currently ongoing)
 A Python implementation of the Mattell game Blokus, with an option to add new AIs
 
-Screenshots (P.S. The green box over current player's turn and AI's turn's text is pending for the next commit):
+Screenshots:
 
 ![blokus](https://user-images.githubusercontent.com/13799022/96349194-da8c0a80-10e8-11eb-8d1c-e29aa596f4c1.jpg)
 ![blokus_ai_turn](https://user-images.githubusercontent.com/13799022/96349209-fc858d00-10e8-11eb-9128-dc6793321e2b.JPG)

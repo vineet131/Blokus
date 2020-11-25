@@ -3,6 +3,27 @@ import sys, os
 #Developer options for debugging
 VERBOSITY = 1
 
+BLACK = [0, 0, 0]
+WHITE = [255, 255, 255]
+GREEN = [0, 255, 0]
+PURPLE = [128, 0, 128]
+ORANGE = [255, 169, 0]
+RED = [255, 60, 0]
+
+def get_model(model):
+    if model == "tf_keras":
+        try:
+            import AI.RLModelKeras as rlmk
+            return rlmk.TDN(model_name = "models/test_396_1")
+        except:
+            pass
+    elif model == "torch":
+        try:
+            import AI.RLModelTorch as rlmt
+            return rlmt.TDN()
+        except:
+            pass
+
 #Board size
 ROW_COUNT = 14
 COLUMN_COUNT = 14
@@ -13,13 +34,6 @@ STARTING_SCORE = 89
 WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 720
 WINDOW_SIZE = [WINDOW_WIDTH, WINDOW_HEIGHT]
-
-BLACK = [0, 0, 0]
-WHITE = [255, 255, 255]
-GREEN = [0, 255, 0]
-PURPLE = [128, 0, 128]
-ORANGE = [255, 169, 0]
-RED = [255, 60, 0]
 
 #The empty squares on the board shall be populated by this value
 BOARD_FILL_VALUE = 0
@@ -43,3 +57,9 @@ def write_to_log(msg):
     with open(log_file, "a+") as f:
         f.write("\n\n\n"+msg)
         f.close()
+
+HUMAN_PARAMS = {"default_p1" : {"is_ai" : False, "color" : PURPLE, "name_if_ai" : None, "ai_class": None},
+                "default_p2" : {"is_ai" : False, "color" : ORANGE, "name_if_ai" : None, "ai_class": None}}
+AI_PARAMS = {"randombot_p2" : {"is_ai" : True, "color" : ORANGE, "name_if_ai" : "RandomMovesBot", "ai_class" : None},
+             "rlkeras_p2" : {"is_ai" : True, "color" : ORANGE, "name_if_ai" : "ReinforcementLearningAI", "ai_class": get_model("tf_keras")},
+             "rltorch_p2" : {"is_ai" : True, "color" : ORANGE, "name_if_ai" : "ReinforcementLearningAI", "ai_class": get_model("torch")}}

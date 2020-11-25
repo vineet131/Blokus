@@ -19,10 +19,8 @@ class PygameClass:
         self.infobox_msg = ""
 
         if player_init_params is None:
-            player_init_params = {"p1" : {"is_ai" : False, "color" : constants.PURPLE, "name_if_ai" : None,
-                                          "ai_class" : None},
-                                  "p2" : {"is_ai" : True, "color" : constants.ORANGE, "name_if_ai" : "RandomMovesBot",
-                                          "ai_class" : None}}
+            player_init_params = {"p1" : constants.HUMAN_PARAMS["default_p1"],
+                                  "p2" : constants.AI_PARAMS["randombot_p2"]}
         self.player1, self.player2 = self.init_players(player_init_params)
         
     def init_pygame(self):
@@ -110,8 +108,10 @@ class PygameClass:
         self.infobox_msg_time_start = pygame.time.get_ticks()
         self.infobox_msg = msg_key
     
-    def display_infobox_msg_end(self):
-        if pygame.time.get_ticks() - self.infobox_msg_time_start > self.infobox_msg_timeout:
+    def display_infobox_msg_end(self, end_now = False):
+        if end_now:
+            self.infobox_msg_time_start = None
+        elif pygame.time.get_ticks() - self.infobox_msg_time_start > self.infobox_msg_timeout:
             self.infobox_msg_time_start = None
 
 #Game into screen code (Currently incomplete)
@@ -130,25 +130,30 @@ def game_intro():
 
 #The main game loop
 def game_loop():
-    from AI.ReinforcementLearningModelKeras import TDN
-    player_init_params = {"p1" : {"is_ai" : False, "color" : constants.PURPLE, "name_if_ai" : None,
-                                  "ai_class": None},
-                          "p2" : {"is_ai" : True, "color" : constants.ORANGE, "name_if_ai" : "ReinforcementLearningAI",
-                                  "ai_class": TDN()}}
+    player_init_params = {"p1" : constants.HUMAN_PARAMS["default_p1"],
+                          "p2" : constants.AI_PARAMS["rlkeras_p2"]}
     pgc = PygameClass(player_init_params)
     active_player, opponent = pgc.player1, pgc.player2
     drawElements.init_piece_rects(pgc.player1.remaining_pieces, pgc.player2.remaining_pieces)
+    skip_to_blit = False
     
     while not pgc.game_over:
         #Two kinds of players, human and AI. We use that as our basis for checking and making turn based moves.
         #When AI player's turn, let the AIManager handle the move making
         #When human player's turn, listen for input
         if active_player.is_ai:
-            if not active_player.is_1st_move:
-                #This was for debugging purposes
-                pygame.time.wait(20)
-            AIManager.main(pgc.gameboard, active_player, opponent)
-            active_player, opponent = player.switch_active_player(active_player, opponent)
+            pgc.display_infobox_msg_start("ai_turn")
+            #This variable helps us display the infobox message above
+            if not skip_to_blit:
+                skip_to_blit = True
+            else:
+                if not active_player.is_1st_move:
+                    #This was for debugging purposes
+                    pygame.time.wait(5000)
+                skip_to_blit = False
+                AIManager.main(pgc.gameboard, active_player, opponent)
+                active_player, opponent = player.switch_active_player(active_player, opponent)
+                pgc.display_infobox_msg_end(True)
         else:
             active_player, opponent = pgc.event_handler(active_player, opponent)
         
@@ -156,7 +161,7 @@ def game_loop():
         pgc.background.fill(constants.BLACK)
         
         #Draw the necessary components
-        drawElements.draw_infobox(pgc.background, pgc.player1, pgc.player2)
+        drawElements.draw_infobox(pgc.background, pgc.player1, pgc.player2, active_player)
         if pgc.infobox_msg_time_start is not None:
             drawElements.draw_infobox_msg(pgc.background, pgc.player1, pgc.player2, pgc.infobox_msg)
             pgc.display_infobox_msg_end()
